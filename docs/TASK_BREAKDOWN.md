@@ -25,26 +25,30 @@
 
 ## Phase 1：数据获取与初步核查
 
-- [ ] 1.1 挂载数据集，读取 `train.csv`，核对字段名与计划第 3 节表格 ✅ 字段完全一致（image_id,class_name,class_id,rad_id,x_min,y_min,x_max,y_max）
-- [ ] 1.2 统计实际 image 数量、正常/异常比例、各类别标注框数 ✅ 15000/10606/4394 与先验一致；标注者实为 17 位医生池、每图 3 人
-- [ ] 1.3 随机抽样若干 DICOM，检查 `WindowCenter/WindowWidth/RescaleSlope/RescaleIntercept` 是否齐全（**需下载 DICOM 原图，挪到 Phase 2 一并做**）
-- [ ] 1.4 核对 14 类映射表与实际 `train.csv` 是否一致 ✅ 一致，`scripts/class_names.py` 已据此更新
+- [x] 1.1 挂载数据集，读取 `train.csv`，核对字段名与计划第 3 节表格 ✅ 字段完全一致
+- [x] 1.2 统计实际 image 数量、正常/异常比例、各类别标注框数 ✅ 15000/10606/4394 与先验一致；标注者实为 17 位医生池、每图 3 人
+- [x] 1.3 DICOM 头信息缺失率统计 ✅ 用 `sunhwan/.../dicom-metadata`，WindowCenter/Width 97.18%可用，RescaleSlope/Intercept 81.88%可用
+- [x] 1.4 核对 14 类映射表与实际 `train.csv` ✅ 一致，`scripts/class_names.py` 已冻结
 
-**验收**：产出数据核查小结（数量 / 字段 / 异常样本 / DICOM 头信息缺失比例），记入 PLAN_PROGRESS.md。
+**验收**：✅ Phase 1 完成。数据核查小结已记入 PLAN_PROGRESS.md。
 
 ---
 
 ## Phase 2：数据预处理
 
-- [ ] 2.1 写 `scripts/dicom_to_png.py`：窗宽窗位 (VOI LUT / WindowCenter+WindowWidth) → 可视范围 → CLAHE → 存 `images_png/`；DICOM 头缺失时用全局像素分布 min-max 兜底
-- [ ] 2.2 保留一组"处理前 vs 处理后"对比图（供 README 展示）
-- [ ] 2.3 灰度转 3 通道：选定方案（复制通道 / 伪彩色），在脚本注释里写明选择理由
-- [ ] 2.4 写 `scripts/label_fusion.py`，产出三版 COCO 标注：
+**数据源调整（基于 Phase 1 与算力约束）：**
+- 采用 `corochann/vinbigdata-chest-xray-original-png`（第三方已从 DICOM 转 PNG）
+- 本项目重点：CLAHE 增强 + 多标注融合管道（WBF/NMS 消融是核心卖点）
+- README 诚实说明数据来源
+
+- [ ] 2.1 写 `scripts/apply_clahe.py`：读 PNG → CLAHE 增强 → 灰度转 3 通道 → 存 `images_png/`；保留处理前后对比图（供 README）
+- [ ] 2.2 灰度转 3 通道方案选定：复制通道 / 伪彩色二选一，在脚本注释记理由
+- [ ] 2.3 写 `scripts/label_fusion.py`，产出三版 COCO 标注：
       - `labels_coco/raw/`：3 医生框全保留
       - `labels_coco/wbf/`：`ensemble-boxes` 的 `weighted_boxes_fusion`，IoU 阈值先 0.5
       - `labels_coco/nms/`：简单 NMS 去重
-- [ ] 2.5 **融合策略消融实验**：YOLOv8n 少量 epoch，分别在三版标注上训练，对比 val mAP，产出"融合方式 vs mAP"表 → 锁定最终融合策略（IoU 阈值可再做一次消融）
-- [ ] 2.6 写 `scripts/convert_coco_yolo.py`：从选定融合标注生成完整 COCO json（MMDet 用）+ YOLO txt（Ultralytics 用）
+- [ ] 2.4 **融合策略消融实验**：YOLOv8n 少量 epoch（如 20ep），分别在三版标注上训练，对比 val mAP，产出"融合方式 vs mAP"表 → 锁定最终融合策略（IoU 阈值可再做一次消融）
+- [ ] 2.5 写 `scripts/convert_coco_yolo.py`：从选定融合标注生成完整 COCO json（MMDet 用）+ YOLO txt（Ultralytics 用）
 
 **验收**：`data/processed/` 下有完整 PNG + 双格式标注 + 一份融合消融结果表。
 

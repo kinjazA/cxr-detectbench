@@ -50,8 +50,52 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 
 **No finding 行的 x_min/y_min/x_max/y_max 为空**：符合"图像级标签不参与 box 回归"设定，处理时需跳过这些行的框坐标。
 
-> Phase 1 后续：DICOM 头信息（WindowCenter/Width/RescaleSlope/Intercept）缺失率统计
-> 需要下载 DICOM 原图才能做，移至 Phase 2 开始时一并完成（避免重复下载）。
+**Phase 1.3 DICOM 头信息核查（已完成，用 `sunhwan/vinbigdata-chest-xray-dicom-metadata`）：**
+
+| 字段 | 缺失数 / 总数 | 缺失率 | 可用率 |
+|---|---|---|---|
+| WindowCenter | 423 / 15000 | 2.82% | 97.18% |
+| WindowWidth | 423 / 15000 | 2.82% | 97.18% |
+| RescaleSlope | 2718 / 15000 | 18.12% | 81.88% |
+| RescaleIntercept | 2718 / 15000 | 18.12% | 81.88% |
+
+- WindowCenter/WindowWidth 同时具备的占 97.18%，成对缺失 2.82%
+- RescaleSlope/RescaleIntercept 同时具备的占 81.88%，成对缺失 18.12%
+- 原始 DICOM 分辨率不统一（主要有 2430×1994 / 3072×3072 / 2880×2304 等 10+ 种尺寸）
+
+**对 Phase 2 的影响（用现成 PNG 数据集路线）：**
+- 采用 `corochann/vinbigdata-chest-xray-original-png`（第三方已从 DICOM 转 PNG）
+- Phase 2 脚本只需做 CLAHE + 灰度转 3 通道，不再需要 pydicom 解码与窗宽窗位变换
+- README 诚实说明："采用第三方预转换 PNG，本项目重点在 CLAHE 增强与多标注融合管道"
+
+---
+
+## Phase 2（数据预处理脚本实现）
+
+**脚本实现完成（2026-07-17）：**
+
+- `scripts/apply_clahe.py` ✅ 
+  - 输入：PNG（来自 corochann/...-original-png）
+  - 流程：CLAHE (clip_limit=2.0, tile_size=8) → 灰度转 3 通道（复制通道方案）
+  - 输出：处理后 PNG + 对比图（Phase 2.2）
+  - 灰度转 3 通道理由已在脚本注释说明：保留原始灰度语义、适配 ImageNet 预训练、无额外计算开销
+
+- `scripts/label_fusion.py` ✅
+  - 产出三版 COCO 标注：raw（全保留）/ wbf（ensemble-boxes weighted_boxes_fusion）/ nms（简单 NMS）
+  - 支持 IoU 阈值调整（默认 0.5，Phase 2.4 消融时可做阈值扫描）
+  - 按 class_id 分组融合（per-class WBF/NMS）
+  - 过滤 No finding（class_id=14）
+
+- `scripts/convert_coco_yolo.py` ✅
+  - COCO bbox [x, y, w, h] → YOLO <cls> <cx> <cy> <w> <h> (normalized)
+  - 每张图一个 .txt 文件
+
+**下一步（Phase 2 实际执行）：**
+- 在 Kaggle Notebook 挂载 `corochann/vinbigdata-chest-xray-original-png` + `train.csv` + `images.csv`
+- 运行 `apply_clahe.py` 产出处理后 PNG（或直接用原始 PNG + 仅做融合，视算力）
+- 运行 `label_fusion.py` 产出三版 COCO 标注
+- Phase 2.4 融合消融实验：YOLOv8n 20ep 分别在三版上训练，对比 val mAP
+- 根据消融结果锁定最终融合策略，运行 `convert_coco_yolo.py` 生成 YOLO 格式
 
 ---
 

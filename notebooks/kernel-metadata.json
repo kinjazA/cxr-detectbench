@@ -1,0 +1,18 @@
+{
+  "id": "kinjaza/phase2-preprocessing",
+  "title": "Phase2 Preprocessing",
+  "code_file": "phase2_preprocessing.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "corochann/vinbigdata-chest-xray-original-png"
+  ],
+  "competition_sources": [
+    "vinbigdata-chest-xray-abnormalities-detection"
+  ],
+  "kernel_sources": []
+}
