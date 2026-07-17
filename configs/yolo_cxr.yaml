@@ -1,0 +1,32 @@
+# YOLO / RT-DETR 训练配置（Ultralytics 格式）
+# Phase 5.3 / 5.4 实际训练时填写。
+# 参考: https://docs.ultralytics.com/
+
+# 数据路径（Kaggle 上为 /kaggle/input/... 挂载路径，按实际改）
+path: /kaggle/input/cxr-detectbench-processed  # 根目录
+train: images/train  # 相对 path
+val: images/val
+test: images/test
+
+# 类别
+nc: 14
+names:
+  0: Aortic enlargement
+  1: Atelectasis
+  2: Calcification
+  3: Cardiomegaly
+  4: Consolidation
+  5: ILD
+  6: Infiltration
+  7: Lung Opacity
+  8: Nodule/Mass
+  9: Other lesion
+  10: Pleural effusion
+  11: Pleural thickening
+  12: Pneumothorax
+  13: Pulmonary fibrosis
+
+# 训练超参（Phase 5.3 实际值）
+# imgsz: 1024
+# epochs: 100
+# 稀有类别 copy-paste 增强；最后 10% epoch 关 mosaic

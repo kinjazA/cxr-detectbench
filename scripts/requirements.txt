@@ -1,0 +1,27 @@
+# CXR-DetectBench dependencies
+# 实际版本以 Kaggle 上 `pip list` 为准，回填到 docs/PLAN_PROGRESS.md
+
+# --- detection frameworks ---
+ultralytics            # YOLO series + RT-DETR
+# openmim + mmengine/mmcv/mmdet 建议 mim install（见下注释）：
+#   pip install -U openmim
+#   mim install mmengine mmcv mmdet   # Faster R-CNN / RetinaNet / DINO
+
+# --- medical imaging & data ---
+pydicom
+opencv-python-headless
+albumentations         # 数据增强，含 CLAHE
+ensemble-boxes         # WBF 多标注融合
+pycocotools            # COCO 格式训练/评估
+
+# --- evaluation & viz ---
+scikit-learn           # StratifiedKFold
+pandas
+numpy
+matplotlib
+seaborn
+
+# --- deploy ---
+onnx
+onnxruntime
+gradio

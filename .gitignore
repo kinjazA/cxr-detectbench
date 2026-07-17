@@ -1,0 +1,55 @@
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- IDE ---
+.vscode/
+.idea/
+
+# --- Data & models (large / not tracked) ---
+# raw DICOMs and derived images live on Kaggle, never committed
+data/raw/*
+data/processed/images_png/*
+data/processed/labels_coco/raw/*
+data/processed/labels_coco/wbf/*
+data/processed/labels_coco/nms/*
+data/processed/labels_yolo/*
+# keep only split index csvs + small json in repo
+!data/splits/
+!data/processed/**/*.json
+
+# model checkpoints (too big for plain git; if needed use Git LFS)
+outputs/checkpoints/*
+!outputs/checkpoints/.gitkeep
+
+# eval / bad-case images are regenerated; keep out
+outputs/eval_results/*
+!outputs/eval_results/.gitkeep
+outputs/bad_cases/*
+!outputs/bad_cases/.gitkeep
+
+# --- Weights / ONNX ---
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# --- Logs / WandB / CFG artifacts ---
+runs/
+wandb/
+mlruns/
+*.log
+
+# --- Jupyter (allow notebooks, ignore checkpoints already above) ---
