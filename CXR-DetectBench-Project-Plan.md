@@ -95,7 +95,7 @@ cxr-detectbench/
 
 - **来源**：Kaggle 竞赛 `vinbigdata-chest-xray-abnormalities-detection`，在 Kaggle Notebook 中用 "Add Input" 直接挂载，无需下载到本地。
 - **规模**：训练集 15,000 张（10,606 张 "No finding" 正常片 + 4,394 张含异常标注的片），DICOM 格式。官方测试集 3,000 张标签隐藏（本项目不使用，自行在训练集内划分 train/val/test）。
-- **标注方式**：每张训练图由 **3 名放射科医生独立标注**（这是多标注融合环节的数据基础）。
+- **标注方式**：由 **17 位放射科医生（R1–R17）**独立标注，每张异常图由其中恰好 3 位完成（这是多标注融合环节的数据基础；Phase 1 核查后已从初稿"固定 3 名医生"修正为此说法）。
 - **类别列表（14类异常 + No finding，class_id 以实际下载的 `train.csv`/`classes.csv` 表头为准，下表为已知的标准映射，Claude Code 首次读取数据后请核对并在 Notes 中确认）**：
 
 | class_id | 类别英文名 | 备注 |

@@ -25,10 +25,10 @@
 
 ## Phase 1：数据获取与初步核查
 
-- [ ] 1.1 挂载数据集，读取 `train.csv`，核对字段名与计划第 3 节表格（`image_id, class_name, class_id, rad_id, x_min, y_min, x_max, y_max`）
-- [ ] 1.2 统计实际 image 数量、正常/异常比例、各类别标注框数；与先验数字（10,606 No finding / 4,394 异常）交叉验证，记差异
-- [ ] 1.3 随机抽样若干 DICOM，检查 `WindowCenter/WindowWidth/RescaleSlope/RescaleIntercept` 是否齐全；统计缺失比例，为兜底逻辑做准备
-- [ ] 1.4 核对 14 类映射表与实际 `classes.csv`/`train.csv` 是否一致，确认后回写本仓库 `scripts/` 下的一份类别映射常量文件 `class_names.py`
+- [ ] 1.1 挂载数据集，读取 `train.csv`，核对字段名与计划第 3 节表格 ✅ 字段完全一致（image_id,class_name,class_id,rad_id,x_min,y_min,x_max,y_max）
+- [ ] 1.2 统计实际 image 数量、正常/异常比例、各类别标注框数 ✅ 15000/10606/4394 与先验一致；标注者实为 17 位医生池、每图 3 人
+- [ ] 1.3 随机抽样若干 DICOM，检查 `WindowCenter/WindowWidth/RescaleSlope/RescaleIntercept` 是否齐全（**需下载 DICOM 原图，挪到 Phase 2 一并做**）
+- [ ] 1.4 核对 14 类映射表与实际 `train.csv` 是否一致 ✅ 一致，`scripts/class_names.py` 已据此更新
 
 **验收**：产出数据核查小结（数量 / 字段 / 异常样本 / DICOM 头信息缺失比例），记入 PLAN_PROGRESS.md。
 

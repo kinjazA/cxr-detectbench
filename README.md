@@ -26,7 +26,7 @@
 [Kaggle: vinbigdata-chest-xray-abnormalities-detection](https://www.kaggle.com/competitions/vinbigdata-chest-xray-abnormalities-detection)
 
 - 15,000 张训练胸片（10,606 张 No finding + 4,394 张含异常标注），DICOM 格式
-- 每张图由 3 名放射科医生独立标注（多标注融合的数据基础）
+- 由 **17 位放射科医生**独立标注，每张异常图恰好由其中 3 位完成（多标注融合的数据基础）
 - 14 类胸部异常 + No finding
 
 > ⚠️ **数据使用协议**：VinDr-CXR 数据仅限学术 / 非商业研究用途。本仓库不包含任何原始 DICOM 或标注文件，仅含处理脚本与配置；实际训练在 Kaggle Notebook 中挂载官方数据集完成。
