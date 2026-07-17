@@ -9,7 +9,8 @@
   "enable_tpu": false,
   "enable_internet": true,
   "dataset_sources": [
-    "corochann/vinbigdata-chest-xray-original-png"
+    "corochann/vinbigdata-chest-xray-original-png",
+    "sunhwan/vinbigdata-chest-xray-dicom-metadata"
   ],
   "competition_sources": [
     "vinbigdata-chest-xray-abnormalities-detection"
