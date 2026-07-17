@@ -173,13 +173,54 @@ def build_coco_json(
     df = pd.read_csv(train_csv_path)
     images_df = pd.read_csv(images_meta_path)
 
-    # 从 images.csv 获取分辨率（列名可能是 'image_id' 或 'Unnamed: 0'，取决于数据集版本）
-    if 'image_id' not in images_df.columns and 'Unnamed: 0' in images_df.columns:
-        images_df.rename(columns={'Unnamed: 0': 'image_id'}, inplace=True)
+    # 从 images.csv 获取分辨率（列名因数据集版本而异，需要自动适配）
+    print(f"[DEBUG] images.csv columns: {list(images_df.columns)}")
+
+    # 适配 image_id 列名
+    id_col = None
+    for col in ['image_id', 'SOPInstanceUID', 'SeriesInstanceUID', 'StudyInstanceUID']:
+        if col in images_df.columns:
+            id_col = col
+            break
+    if id_col is None:
+        id_col = images_df.columns[0]  # fallback to first column
+    if id_col != 'image_id':
+        images_df.rename(columns={id_col: 'image_id'}, inplace=True)
+
+    # 适配宽高列名
+    width_col = None
+    height_col = None
+    for col in images_df.columns:
+        if col.lower() in ('columns', 'width', 'imagewidth', 'cols'):
+            width_col = col
+        if col.lower() in ('rows', 'height', 'imageheight'):
+            height_col = col
+    # 如果没有精确匹配，尝试模糊匹配
+    if width_col is None:
+        for col in images_df.columns:
+            if 'column' in col.lower() or 'width' in col.lower():
+                width_col = col
+                break
+    if height_col is None:
+        for col in images_df.columns:
+            if 'row' in col.lower() or 'height' in col.lower():
+                height_col = col
+                break
+    # 最后兜底：用倒数第二列和最后一列
+    if width_col is None and height_col is None:
+        if len(images_df.columns) >= 2:
+            width_col = images_df.columns[-2]
+            height_col = images_df.columns[-1]
+
+    if width_col is None or height_col is None:
+        print(f"[ERROR] Cannot identify width/height columns in images.csv! Columns: {list(images_df.columns)}")
+        raise KeyError(f"Need 'Columns'/'Rows' or similar in {list(images_df.columns)}")
+
+    print(f"[DEBUG] Using image_id={id_col}, width={width_col}, height={height_col}")
 
     img_size_map = {}
     for _, row in images_df.iterrows():
-        img_size_map[row['image_id']] = (int(row['Columns']), int(row['Rows']))  # (width, height)
+        img_size_map[row['image_id']] = (int(row[width_col]), int(row[height_col]))  # (width, height)
 
     # 过滤掉 No finding（class_id=14）
     df_boxes = df[df['class_id'] != 14].copy()
