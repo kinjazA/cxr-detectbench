@@ -52,4 +52,5 @@ wandb/
 mlruns/
 *.log
 
-# --- Jupyter (allow notebooks, ignore checkpoints already above) ---
+# --- Jupyter (allow notebooks, ignore checkpoints already above) ---cxr-detectbench/
+kaggle_output/
