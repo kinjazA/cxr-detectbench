@@ -179,6 +179,8 @@ def prepare_variant(fusion_mode, coco_json, ablation_dir, train_ids, val_ids):
 
 def create_data_yaml(ablation_dir):
     """Create shared data.yaml at ablation/data.yaml."""
+    import sys
+    sys.path.insert(0, 'scripts')
     from class_names import CLASS_NAMES
     names = [CLASS_NAMES[i] for i in range(14)]
 
