@@ -75,13 +75,14 @@ def copy_images_split(images_src, ablation_dir, train_ids, val_ids):
     total = len(pngs)
     print(f"Copying {total} PNG images from {images_src}...")
 
-    # Use subprocess cp for bulk speed, then verify count
-    # Copy all to a temp dir, then move by split
+    # Use bulk copy via cp (avoids ARG_MAX by copying dir contents)
+    # Create temp directory for all images
     all_images_dir = ablation_dir / '_images_all'
     all_images_dir.mkdir(parents=True, exist_ok=True)
 
+    # Use cp with source dir contents (not listing individual files)
     result = subprocess.run(
-        ['cp', '-r'] + [str(p) for p in pngs] + [str(all_images_dir / '.')],
+        ['cp', '-r', f'{images_src}/.', f'{all_images_dir}/'],
         capture_output=True, text=True
     )
     if result.returncode != 0:
@@ -90,7 +91,8 @@ def copy_images_split(images_src, ablation_dir, train_ids, val_ids):
         for png in tqdm(pngs, desc="Copying images"):
             shutil.copy2(str(png), str(all_images_dir / png.name))
     else:
-        print(f"Bulk copied {len(pngs)} images")
+        print(f"Bulk copied to {all_images_dir}")
+        print(f"  (checking: {len(list(all_images_dir.glob('*.png')))} PNGs)")
 
     # Sort by split
     train_count = 0
