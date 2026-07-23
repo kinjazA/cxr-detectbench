@@ -212,6 +212,11 @@ def build_coco_json(
             width_col = images_df.columns[-2]
             height_col = images_df.columns[-1]
 
+    # Kaggle train_meta.csv uses dim0=height and dim1=width.
+    if 'dim0' in images_df.columns and 'dim1' in images_df.columns:
+        height_col = 'dim0'
+        width_col = 'dim1'
+
     if width_col is None or height_col is None:
         print(f"[ERROR] Cannot identify width/height columns in images.csv! Columns: {list(images_df.columns)}")
         raise KeyError(f"Need 'Columns'/'Rows' or similar in {list(images_df.columns)}")
@@ -226,6 +231,27 @@ def build_coco_json(
     df_boxes = df[df['class_id'] != 14].copy()
 
     # 按 image_id 分组
+    outside_examples = []
+    outside_count = 0
+    for row in df_boxes.itertuples(index=False):
+        size = img_size_map.get(row.image_id)
+        if size is None:
+            continue
+        img_width, img_height = size
+        if row.x_max > img_width + 1 or row.y_max > img_height + 1:
+            outside_count += 1
+            if len(outside_examples) < 5:
+                outside_examples.append({
+                    'image_id': row.image_id,
+                    'bbox_xyxy': [row.x_min, row.y_min, row.x_max, row.y_max],
+                    'size_wh': [img_width, img_height],
+                })
+    if outside_count:
+        raise ValueError(
+            f"{outside_count} boxes exceed image dimensions after width/height inference. "
+            f"Examples: {outside_examples}"
+        )
+
     grouped = df_boxes.groupby('image_id')
 
     coco = {

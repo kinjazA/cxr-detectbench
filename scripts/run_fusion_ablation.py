@@ -32,6 +32,28 @@ from tqdm import tqdm
 from ultralytics import YOLO
 
 
+def require_png_source(images_src):
+    """Return top-level PNG files from a validated image directory."""
+    images_src = Path(images_src).resolve()
+    if not images_src.exists():
+        raise FileNotFoundError(
+            f"Image source does not exist: {images_src}. "
+            "Create data/processed/images_png or pass --images_dir to the confirmed PNG train directory."
+        )
+    if not images_src.is_dir():
+        raise NotADirectoryError(f"Image source is not a directory: {images_src}")
+
+    pngs = sorted(images_src.glob('*.png'))
+    if not pngs:
+        recursive_count = sum(1 for _ in images_src.rglob('*.png'))
+        raise RuntimeError(
+            f"Image source has 0 top-level PNGs: {images_src} "
+            f"(recursive PNG count: {recursive_count}). "
+            "Pass the directory that directly contains <image_id>.png files."
+        )
+    return images_src, pngs
+
+
 def create_temp_split(train_csv_path, output_dir, test_size=0.2, seed=42):
     """80/20 random split for ablation."""
     df = pd.read_csv(train_csv_path)
@@ -61,23 +83,29 @@ def copy_images_split(images_src, ablation_dir, train_ids, val_ids):
     if train_dir.exists() and val_dir.exists():
         train_count = len(list(train_dir.glob('*.png')))
         val_count = len(list(val_dir.glob('*.png')))
-        total_existing = train_count + val_count
-        total_needed = len(train_ids) + len(val_ids)
-        if total_existing >= total_needed:
+        if train_count == len(train_ids) and val_count == len(val_ids):
+            total_existing = train_count + val_count
+            total_needed = len(train_ids) + len(val_ids)
             print(f"Images already exist: {train_count} train, {val_count} val ({total_existing}/{total_needed})")
             return images_dir
 
-    images_src = Path(images_src).resolve()
+    images_src, pngs = require_png_source(images_src)
+
+    if train_dir.exists():
+        shutil.rmtree(train_dir)
+    if val_dir.exists():
+        shutil.rmtree(val_dir)
     train_dir.mkdir(parents=True, exist_ok=True)
     val_dir.mkdir(parents=True, exist_ok=True)
 
-    pngs = sorted(images_src.glob('*.png'))
     total = len(pngs)
     print(f"Copying {total} PNG images from {images_src}...")
 
     # Use bulk copy via cp (avoids ARG_MAX by copying dir contents)
     # Create temp directory for all images
     all_images_dir = ablation_dir / '_images_all'
+    if all_images_dir.exists():
+        shutil.rmtree(all_images_dir)
     all_images_dir.mkdir(parents=True, exist_ok=True)
 
     # Use cp with source dir contents (not listing individual files)
@@ -111,6 +139,18 @@ def copy_images_split(images_src, ablation_dir, train_ids, val_ids):
     shutil.rmtree(all_images_dir)
 
     print(f"Images: {train_count} train, {val_count} val")
+    expected_train = len(train_ids)
+    expected_val = len(val_ids)
+    if train_count != expected_train or val_count != expected_val:
+        train_found = {p.stem for p in train_dir.glob('*.png')}
+        val_found = {p.stem for p in val_dir.glob('*.png')}
+        missing_train = sorted(train_ids - train_found)[:5]
+        missing_val = sorted(val_ids - val_found)[:5]
+        raise RuntimeError(
+            "Copied image count does not match split: "
+            f"train {train_count}/{expected_train}, val {val_count}/{expected_val}. "
+            f"Missing train examples: {missing_train}; missing val examples: {missing_val}"
+        )
     return images_dir
 
 
@@ -152,12 +192,19 @@ def prepare_variant(fusion_mode, coco_json, ablation_dir, train_ids, val_ids):
 
         train_cnt = 0
         val_cnt = 0
-        for img in coco['images']:
-            img_id = img['id']
+        coco_ids = {img['id'] for img in coco['images']}
+        missing_from_coco = (train_ids | val_ids) - coco_ids
+        if missing_from_coco:
+            raise RuntimeError(
+                f"{len(missing_from_coco)} split image_ids are missing from {coco_json}. "
+                f"Examples: {sorted(missing_from_coco)[:5]}"
+            )
+
+        for img_id in sorted(train_ids | val_ids):
             txt_file = f"{img_id}.txt"
             src = temp_dir / txt_file
             if not src.exists():
-                continue
+                src.write_text('')
             if img_id in train_ids:
                 shutil.copy2(str(src), str(lbl_train / txt_file))
                 train_cnt += 1
@@ -172,12 +219,21 @@ def prepare_variant(fusion_mode, coco_json, ablation_dir, train_ids, val_ids):
         val_cnt = len(list((labels_dir / 'val').glob('*.txt')))
         print(f"  Labels already exist: {train_cnt} train, {val_cnt} val")
 
+    if train_cnt != len(train_ids) or val_cnt != len(val_ids):
+        raise RuntimeError(
+            f"Label count mismatch for {fusion_mode}: "
+            f"train {train_cnt}/{len(train_ids)}, val {val_cnt}/{len(val_ids)}"
+        )
+
     # Update ablation/labels/ symlink to point to this variant's labels
     labels_link = ablation_dir / 'labels'
-    if labels_link.is_symlink() or labels_link.exists():
+    if labels_link.is_symlink() or labels_link.is_file():
         labels_link.unlink()
-    os.symlink(str(mode_dir / 'labels'), str(labels_link), target_is_directory=True)
-    print(f"  labels/ symlink → {mode_dir.name}/labels/")
+    elif labels_link.exists():
+        shutil.rmtree(labels_link)
+    target = (mode_dir / 'labels').resolve()
+    os.symlink(str(target), str(labels_link), target_is_directory=True)
+    print(f"  labels/ symlink -> {target}")
 
 
 def create_data_yaml(ablation_dir):
@@ -207,6 +263,10 @@ def verify_setup(ablation_dir):
     print(f"\nSetup verification:")
     print(f"  images/train: {len(images_train)} PNGs")
     print(f"  images/val:   {len(images_val)} PNGs")
+    if not images_train or not images_val:
+        raise RuntimeError("Ablation setup has no train or val images.")
+    if not labels_link.exists():
+        raise RuntimeError(f"Label link is broken or missing: {labels_link}")
     print(f"  labels/       → {os.readlink(str(labels_link)) if labels_link.is_symlink() else 'NOT SYMLINK'}")
 
     # Check a few labels through the symlink
@@ -215,11 +275,18 @@ def verify_setup(ablation_dir):
     print(f"  labels/train:  {len(train_txts)} txt files")
     print(f"  labels/val:    {len(val_txts)} txt files")
 
+    if len(train_txts) != len(images_train) or len(val_txts) != len(images_val):
+        raise RuntimeError(
+            "Label/image count mismatch after symlink switch: "
+            f"train labels/images {len(train_txts)}/{len(images_train)}, "
+            f"val labels/images {len(val_txts)}/{len(images_val)}"
+        )
+
     if len(train_txts) > 0:
         # Verify the first label file is non-empty
         first = train_txts[0]
         content = first.read_text().strip()
-        print(f"  Sample label ({first.name}): {content[:80]}")
+        print(f"  Sample label ({first.name}): {content[:80] if content else '<empty>'}")
 
 
 def main():
@@ -235,10 +302,9 @@ def main():
 
     base_dir = Path(args.coco_dir).parent
     ablation_dir = base_dir / 'ablation'
-    images_src = Path(args.images_dir).resolve()
+    images_src, src_pngs = require_png_source(args.images_dir)
 
     # Verify source images
-    src_pngs = list(images_src.glob('*.png'))
     print(f"Source images: {images_src} ({len(src_pngs)} PNGs)")
 
     # 1. Split (same for all 3 fusion variants)
@@ -273,7 +339,7 @@ def main():
             model.train(data=yaml_path, epochs=args.epochs, imgsz=args.imgsz,
                         batch=args.batch, name=f'fusion_{mode}',
                         project='runs/ablation', exist_ok=True, patience=0, verbose=True)
-            m = model.val()
+            m = model.val(data=yaml_path, imgsz=args.imgsz, batch=args.batch)
             results[mode] = {'mAP50': float(m.box.map50), 'mAP50-95': float(m.box.map)}
             print(f"\n{mode}: mAP@0.5={results[mode]['mAP50']:.4f}"
                   f"  mAP@0.5:0.95={results[mode]['mAP50-95']:.4f}")
@@ -281,7 +347,7 @@ def main():
             print(f"\nERROR {mode}: {e}")
             import traceback
             traceback.print_exc()
-            results[mode] = {'mAP50': 0.0, 'mAP50-95': 0.0}
+            raise RuntimeError(f"Training/validation failed for fusion mode: {mode}") from e
 
     # 5. Summary
     print(f"\n{'='*60}\nResults\n{'='*60}")
