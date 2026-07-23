@@ -2,15 +2,15 @@
 
 Quick 20-epoch training on 3 fusion variants (raw/wbf/nms) to select best strategy.
 
-V15 fix — copies images to real directory (NOT symlink) so YOLO's img2label_paths
-replacement (images/ → labels/) works correctly. Uses labels/ directory-level symlink
-to switch between variants without rewriting data.yaml.
+Links images into YOLO split directories so Kaggle does not duplicate the full
+PNG dataset into /kaggle/working. Uses labels/ directory-level symlink to switch
+between variants without rewriting data.yaml.
 
 Data layout:
   ablation/
     data.yaml             (shared across all variants)
-    images/train/         (REAL dir — copied PNGs for train split)
-    images/val/           (REAL dir — copied PNGs for val split)
+    images/train/         (symlinked PNG files for train split)
+    images/val/           (symlinked PNG files for val split)
     labels/               (DIRECTORY SYMLINK → current variant's labels/)
     raw/labels/train/     (YOLO .txt files for raw fusion)
     raw/labels/val/       (YOLO .txt files for raw fusion)
@@ -23,7 +23,6 @@ import argparse
 import json
 import os
 import shutil
-import subprocess
 from pathlib import Path
 
 import pandas as pd
@@ -69,24 +68,24 @@ def create_temp_split(train_csv_path, output_dir, test_size=0.2, seed=42):
     return set(train_ids), set(val_ids)
 
 
-def copy_images_split(images_src, ablation_dir, train_ids, val_ids):
-    """Copy PNG images to ablation/images/{train,val}/ (one-time, shared by variants).
+def link_images_split(images_src, ablation_dir, train_ids, val_ids):
+    """Link PNG images to ablation/images/{train,val}/ without copying pixels.
 
-    Uses REAL directories (not symlinks) so YOLO's Path.resolve() preserves
-    the /images/ path segment, which img2label_paths needs for /labels/ replacement.
+    The files under images/train and images/val are symlinks, but their paths
+    still contain the /images/ segment YOLO uses to derive /labels/ paths.
     """
     images_dir = ablation_dir / 'images'
     train_dir = images_dir / 'train'
     val_dir = images_dir / 'val'
 
-    # Check if already copied
+    # Check if already linked
     if train_dir.exists() and val_dir.exists():
         train_count = len(list(train_dir.glob('*.png')))
         val_count = len(list(val_dir.glob('*.png')))
         if train_count == len(train_ids) and val_count == len(val_ids):
             total_existing = train_count + val_count
             total_needed = len(train_ids) + len(val_ids)
-            print(f"Images already exist: {train_count} train, {val_count} val ({total_existing}/{total_needed})")
+            print(f"Image links already exist: {train_count} train, {val_count} val ({total_existing}/{total_needed})")
             return images_dir
 
     images_src, pngs = require_png_source(images_src)
@@ -98,47 +97,22 @@ def copy_images_split(images_src, ablation_dir, train_ids, val_ids):
     train_dir.mkdir(parents=True, exist_ok=True)
     val_dir.mkdir(parents=True, exist_ok=True)
 
-    total = len(pngs)
-    print(f"Copying {total} PNG images from {images_src}...")
-
-    # Use bulk copy via cp (avoids ARG_MAX by copying dir contents)
-    # Create temp directory for all images
-    all_images_dir = ablation_dir / '_images_all'
-    if all_images_dir.exists():
-        shutil.rmtree(all_images_dir)
-    all_images_dir.mkdir(parents=True, exist_ok=True)
-
-    # Use cp with source dir contents (not listing individual files)
-    result = subprocess.run(
-        ['cp', '-r', f'{images_src}/.', f'{all_images_dir}/'],
-        capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        # fallback: use python copy
-        print(f"cp bulk copy failed ({result.stderr.strip()}), using shutil per-file...")
-        for png in tqdm(pngs, desc="Copying images"):
-            shutil.copy2(str(png), str(all_images_dir / png.name))
-    else:
-        print(f"Bulk copied to {all_images_dir}")
-        print(f"  (checking: {len(list(all_images_dir.glob('*.png')))} PNGs)")
-
-    # Sort by split
     train_count = 0
     val_count = 0
-    for png in tqdm(all_images_dir.glob('*.png'), desc="Sorting by split"):
+    skipped_count = 0
+    print(f"Linking {len(pngs)} PNG images from {images_src}...")
+    for png in tqdm(pngs, desc="Linking images"):
         image_id = png.stem
         if image_id in train_ids:
-            shutil.move(str(png), str(train_dir / png.name))
+            os.symlink(str(png), str(train_dir / png.name))
             train_count += 1
         elif image_id in val_ids:
-            shutil.move(str(png), str(val_dir / png.name))
+            os.symlink(str(png), str(val_dir / png.name))
             val_count += 1
         else:
-            png.unlink()  # not in either split (shouldn't happen)
+            skipped_count += 1
 
-    shutil.rmtree(all_images_dir)
-
-    print(f"Images: {train_count} train, {val_count} val")
+    print(f"Image links: {train_count} train, {val_count} val, {skipped_count} skipped")
     expected_train = len(train_ids)
     expected_val = len(val_ids)
     if train_count != expected_train or val_count != expected_val:
@@ -147,7 +121,7 @@ def copy_images_split(images_src, ablation_dir, train_ids, val_ids):
         missing_train = sorted(train_ids - train_found)[:5]
         missing_val = sorted(val_ids - val_found)[:5]
         raise RuntimeError(
-            "Copied image count does not match split: "
+            "Linked image count does not match split: "
             f"train {train_count}/{expected_train}, val {val_count}/{expected_val}. "
             f"Missing train examples: {missing_train}; missing val examples: {missing_val}"
         )
@@ -313,11 +287,11 @@ def main():
     print("=" * 60)
     train_ids, val_ids = create_temp_split(args.train_csv, base_dir / 'splits_temp')
 
-    # 2. Copy images (one-time)
+    # 2. Link images (one-time)
     print("\n" + "=" * 60)
-    print("Step 2: Copy images to real directory")
+    print("Step 2: Link images into YOLO split directories")
     print("=" * 60)
-    images_dir = copy_images_split(str(images_src), ablation_dir, train_ids, val_ids)
+    images_dir = link_images_split(str(images_src), ablation_dir, train_ids, val_ids)
 
     # 3. Create shared data.yaml
     yaml_path = create_data_yaml(ablation_dir)
