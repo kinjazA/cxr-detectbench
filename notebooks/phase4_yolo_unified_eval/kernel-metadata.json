@@ -1,6 +1,6 @@
 {
   "id": "kinjaza/phase4-yolo-unified-eval",
-  "title": "Phase4 YOLO Unified Evaluation",
+  "title": "Phase4 YOLO Unified Eval",
   "code_file": "phase4_yolo_unified_eval.ipynb",
   "language": "python",
   "kernel_type": "notebook",
