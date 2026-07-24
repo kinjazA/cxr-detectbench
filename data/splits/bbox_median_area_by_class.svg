@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="540" viewBox="0 0 920 540">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<style>text{font-family:Arial,Helvetica,sans-serif;fill:#1f2933}.title{font-size:18px;font-weight:700}.label{font-size:12px}.tick{font-size:11px;fill:#52606d}.note{font-size:11px;fill:#62748a}</style>
+<text x="24" y="32" class="title">Phase 3 bbox median area by class</text>
+<text x="24" y="52" class="note">Area is normalized by image width and height; smaller bars indicate small-object pressure.</text>
+<text x="24" y="85" class="label">class 0</text>
+<rect x="160" y="72" width="115.43" height="16" fill="#9b51e0"/>
+<rect x="160" y="72" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="85" class="tick">0.0137</text>
+<text x="24" y="115" class="label">class 1</text>
+<rect x="160" y="102" width="315.51" height="16" fill="#9b51e0"/>
+<rect x="160" y="102" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="115" class="tick">0.0374</text>
+<text x="24" y="145" class="label">class 2</text>
+<rect x="160" y="132" width="31.87" height="16" fill="#9b51e0"/>
+<rect x="160" y="132" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="145" class="tick">0.0038</text>
+<text x="24" y="175" class="label">class 3</text>
+<rect x="160" y="162" width="491.45" height="16" fill="#9b51e0"/>
+<rect x="160" y="162" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="175" class="tick">0.0583</text>
+<text x="24" y="205" class="label">class 4</text>
+<rect x="160" y="192" width="272.36" height="16" fill="#9b51e0"/>
+<rect x="160" y="192" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="205" class="tick">0.0323</text>
+<text x="24" y="235" class="label">class 5</text>
+<rect x="160" y="222" width="620.00" height="16" fill="#9b51e0"/>
+<rect x="160" y="222" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="235" class="tick">0.0735</text>
+<text x="24" y="265" class="label">class 6</text>
+<rect x="160" y="252" width="283.94" height="16" fill="#9b51e0"/>
+<rect x="160" y="252" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="265" class="tick">0.0337</text>
+<text x="24" y="295" class="label">class 7</text>
+<rect x="160" y="282" width="178.00" height="16" fill="#9b51e0"/>
+<rect x="160" y="282" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="295" class="tick">0.0211</text>
+<text x="24" y="325" class="label">class 8</text>
+<rect x="160" y="312" width="11.60" height="16" fill="#9b51e0"/>
+<rect x="160" y="312" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="325" class="tick">0.0014</text>
+<text x="24" y="355" class="label">class 9</text>
+<rect x="160" y="342" width="142.07" height="16" fill="#9b51e0"/>
+<rect x="160" y="342" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="355" class="tick">0.0168</text>
+<text x="24" y="385" class="label">class 10</text>
+<rect x="160" y="372" width="73.82" height="16" fill="#9b51e0"/>
+<rect x="160" y="372" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="385" class="tick">0.0088</text>
+<text x="24" y="415" class="label">class 11</text>
+<rect x="160" y="402" width="37.23" height="16" fill="#9b51e0"/>
+<rect x="160" y="402" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="415" class="tick">0.0044</text>
+<text x="24" y="445" class="label">class 12</text>
+<rect x="160" y="432" width="610.37" height="16" fill="#9b51e0"/>
+<rect x="160" y="432" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="445" class="tick">0.0724</text>
+<text x="24" y="475" class="label">class 13</text>
+<rect x="160" y="462" width="89.31" height="16" fill="#9b51e0"/>
+<rect x="160" y="462" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="475" class="tick">0.0106</text>
+</svg>

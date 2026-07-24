@@ -26,6 +26,7 @@ data/processed/labels_coco/raw/*
 data/processed/labels_coco/wbf/*
 data/processed/labels_coco/nms/*
 data/processed/labels_yolo/*
+data/processed/yolo_*
 # keep only split index csvs + small json in repo
 !data/splits/
 !data/processed/**/*.json

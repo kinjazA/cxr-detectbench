@@ -57,23 +57,26 @@
 
 ## Phase 3：EDA 与数据集划分
 
-- [ ] 3.1 类别分布柱状图（识别长尾，如 Pneumothorax）
-- [ ] 3.2 病灶框尺寸分布（识别小目标类别，指导输入分辨率）
-- [ ] 3.3 正常/异常图比例可视化
+- [x] 3.1 类别分布柱状图（识别长尾，如 Pneumothorax）✅ `data/splits/class_image_distribution_by_split.svg`
+- [x] 3.2 病灶框尺寸分布（识别小目标类别，指导输入分辨率）✅ `data/splits/bbox_median_area_by_class.svg` + `bbox_size_summary_by_class.csv`
+- [x] 3.3 正常/异常图比例可视化 ✅ `data/splits/split_report.md` + `split_summary.csv`
 - [ ] 3.4 按 patient/study 级别分层划分 70/15/15：(a) 同病人不跨集合；(b) 各类别三集合比例一致
-- [ ] 3.5 划分结果存 `data/splits/{train,val,test}.csv`，后续所有脚本统一读取（五模型公平对比前提）
+      - 当前本地 metadata 未发现可确认 patient_id/study_id 的字段，因此不能声称完成 patient/study-level split。
+      - 已完成替代方案：image-level stratified 70/15/15，且 14 个异常类图片级比例最大偏差 0.0083。
+- [x] 3.5 划分结果存 `data/splits/{train,val,test}.csv`，后续所有脚本统一读取（五模型公平对比前提）
 
-**验收**：三个 split csv + 一张类别分布在三集合基本一致的验证图。
+**验收**：Phase 3 第一版正式 image-level split 完成。patient/study-level split 需等待可靠分组字段确认后再做。
 
 ---
 
 ## Phase 4：Baseline 打通全流程
 
+- [x] 4.0 写正式 YOLO 数据集准备脚本：读取 Phase 3 split + WBF COCO，生成 `images/{train,val,test}` symlink、`labels/{train,val,test}` txt 和 `data.yaml` ✅ `scripts/prepare_yolo_dataset.py`
 - [ ] 4.1 YOLOv8n 跑通"训练 → 验证 → 推理 → mAP"完整链路（不追求分数，只验流程）
 - [ ] 4.2 确认 COCO 标注可被 pycocotools 正确加载评估
 - [ ] 4.3 确认可视化脚本可用：预测框 + GT 框对比图
 
-**验收**：一次完整且指标可信的 baseline 结果。
+**验收**：一次完整且指标可信的 baseline 结果。4.0 已完成脚本与本地语法检查；正式构建需在 Kaggle 上有 WBF COCO 和 PNG 输入后执行。
 
 ---
 

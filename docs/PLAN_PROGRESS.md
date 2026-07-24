@@ -131,6 +131,83 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 
 ---
 
+## Phase 3（EDA 与正式数据划分）
+
+**第一版正式 split 生成完成（2026-07-24）：**
+
+- 新增脚本：`scripts/prepare_phase3_splits.py`
+- 输入：
+  - `data/raw/train.csv`
+  - `data/raw/images.csv`（用于读取 Rows/Columns 计算 bbox 归一化尺寸）
+- 输出目录：`data/splits/`
+  - `train.csv`
+  - `val.csv`
+  - `test.csv`
+  - `split_summary.csv`
+  - `class_image_distribution_by_split.csv`
+  - `class_annotation_distribution_by_split.csv`
+  - `bbox_size_summary_by_class.csv`
+  - `class_image_distribution_by_split.svg`
+  - `bbox_median_area_by_class.svg`
+  - `split_report.md`
+
+**划分结果（70/15/15）：**
+
+| split | images | abnormal_images | normal_images | abnormal_rate |
+|---|---:|---:|---:|---:|
+| train | 10,500 | 3,076 | 7,424 | 0.2930 |
+| val | 2,250 | 659 | 1,591 | 0.2929 |
+| test | 2,250 | 659 | 1,591 | 0.2929 |
+
+**质量检查：**
+
+- Split 完整性：15,000 张 image_id 全覆盖，train/val/test 互斥，split 大小精确。
+- 图片级类别分布：14 个异常类均接近 70/15/15，最大 split-rate 偏差为 0.0083（class 12 / Pneumothorax，96 张阳性图像，取整后 train=68、val=14、test=14）。
+- Annotation 级别诊断：最大 split-rate 偏差为 0.0385（class 2 / Calcification 的 val split）。由于一张图可包含多个框，当前接受标准以 image-level balance 为主，annotation-level balance 作为后续训练分析参考。
+- BBox 尺寸诊断：Nodule/Mass（class 8）median normalized area=0.0014，Calcification（class 2）=0.0038，Pleural thickening（class 11）=0.0044，小目标压力明显。
+
+**限制与决策：**
+
+- 本地 `data/raw/images.csv` 暂未发现可靠 patient_id/study_id 字段，只有 `PatientSex`、`PatientAge`、`Rows`、`Columns`、`fname` 等 metadata。因此当前不能声称 patient-level 或 study-level split，只能明确为 image-level stratified split。
+- `scripts/prepare_phase3_splits.py` 中加入质量闸门：split 覆盖/互斥/大小检查，以及每类图片级 split-rate 最大偏差阈值（默认 0.03）。后续换 seed 或比例时，如果划分明显跑偏会直接报错。
+
+**结论：Phase 3 第一版正式划分可进入 Phase 4 baseline smoke test。**
+
+---
+
+## Phase 4（Baseline 链路准备）
+
+**正式 YOLO 数据集准备脚本已新增（2026-07-24）：**
+
+- 新增脚本：`scripts/prepare_yolo_dataset.py`
+- 目标：读取 Phase 3 固定 split 和最终 `wbf` COCO 标注，生成 Ultralytics 可直接读取的数据目录。
+- 默认输入：
+  - `data/processed/labels_coco/wbf/annotations.json`
+  - `data/processed/images_png`
+  - `data/splits`
+- 默认输出：`data/processed/yolo_wbf_phase3`
+- 输出结构：
+  - `images/{train,val,test}`：PNG symlink，不复制大图
+  - `labels/{train,val,test}`：每图一个 YOLO txt，No Finding 图写空 txt
+  - `data.yaml`
+  - `dataset_summary.csv`
+
+**质量闸门：**
+
+- split 三集合互斥检查
+- split image_id 必须与 COCO images 完全一致
+- PNG 源文件必须全部存在
+- label/image 数量必须一致
+- YOLO bbox 归一化坐标必须落在 `[0, 1]`
+
+**当前验证状态：**
+
+- 本地已通过 `python -m py_compile scripts\prepare_yolo_dataset.py`
+- 本地已通过 `python scripts\prepare_yolo_dataset.py --help`
+- 未在本地执行完整构建，因为本地没有 `data/processed/labels_coco/wbf/annotations.json` 与 `data/processed/images_png`。正式构建应在 Kaggle 处理产物存在后运行。
+
+---
+
 ## Phase 0
 
 - 0.1 本地仓库骨架完成（README / LICENSE / .gitignore / 目录结构）。2026-07-17

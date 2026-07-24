@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="550" viewBox="0 0 920 550">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<style>text{font-family:Arial,Helvetica,sans-serif;fill:#1f2933}.title{font-size:18px;font-weight:700}.label{font-size:12px}.tick{font-size:11px;fill:#52606d}.note{font-size:11px;fill:#62748a}</style>
+<text x="24" y="32" class="title">Phase 3 class image distribution by split</text>
+<text x="24" y="52" class="note">Stacked bars show each class split into train/val/test image counts.</text>
+<rect x="160" y="58" width="12" height="12" fill="#2f80ed"/>
+<text x="178" y="69" class="tick">train</text>
+<rect x="232" y="58" width="12" height="12" fill="#27ae60"/>
+<text x="250" y="69" class="tick">val</text>
+<rect x="304" y="58" width="12" height="12" fill="#f2994a"/>
+<text x="322" y="69" class="tick">test</text>
+<text x="24" y="87" class="label">class 0 (3067)</text>
+<rect x="160.00" y="74" width="434.02" height="16" fill="#2f80ed"/>
+<rect x="594.02" y="74" width="92.99" height="16" fill="#27ae60"/>
+<rect x="687.01" y="74" width="92.99" height="16" fill="#f2994a"/>
+<rect x="160" y="74" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="87" class="tick">2147 / 460 / 460</text>
+<text x="24" y="117" class="label">class 1 (186)</text>
+<rect x="160.00" y="104" width="433.33" height="16" fill="#2f80ed"/>
+<rect x="593.33" y="104" width="93.33" height="16" fill="#27ae60"/>
+<rect x="686.67" y="104" width="93.33" height="16" fill="#f2994a"/>
+<rect x="160" y="104" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="117" class="tick">130 / 28 / 28</text>
+<text x="24" y="147" class="label">class 2 (452)</text>
+<rect x="160.00" y="134" width="433.45" height="16" fill="#2f80ed"/>
+<rect x="593.45" y="134" width="93.27" height="16" fill="#27ae60"/>
+<rect x="686.73" y="134" width="93.27" height="16" fill="#f2994a"/>
+<rect x="160" y="134" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="147" class="tick">316 / 68 / 68</text>
+<text x="24" y="177" class="label">class 3 (2300)</text>
+<rect x="160.00" y="164" width="434.00" height="16" fill="#2f80ed"/>
+<rect x="594.00" y="164" width="93.00" height="16" fill="#27ae60"/>
+<rect x="687.00" y="164" width="93.00" height="16" fill="#f2994a"/>
+<rect x="160" y="164" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="177" class="tick">1610 / 345 / 345</text>
+<text x="24" y="207" class="label">class 4 (353)</text>
+<rect x="160.00" y="194" width="433.82" height="16" fill="#2f80ed"/>
+<rect x="593.82" y="194" width="93.09" height="16" fill="#27ae60"/>
+<rect x="686.91" y="194" width="93.09" height="16" fill="#f2994a"/>
+<rect x="160" y="194" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="207" class="tick">247 / 53 / 53</text>
+<text x="24" y="237" class="label">class 5 (386)</text>
+<rect x="160.00" y="224" width="433.68" height="16" fill="#2f80ed"/>
+<rect x="593.68" y="224" width="93.16" height="16" fill="#27ae60"/>
+<rect x="686.84" y="224" width="93.16" height="16" fill="#f2994a"/>
+<rect x="160" y="224" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="237" class="tick">270 / 58 / 58</text>
+<text x="24" y="267" class="label">class 6 (613)</text>
+<rect x="160.00" y="254" width="433.90" height="16" fill="#2f80ed"/>
+<rect x="593.90" y="254" width="93.05" height="16" fill="#27ae60"/>
+<rect x="686.95" y="254" width="93.05" height="16" fill="#f2994a"/>
+<rect x="160" y="254" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="267" class="tick">429 / 92 / 92</text>
+<text x="24" y="297" class="label">class 7 (1322)</text>
+<rect x="160.00" y="284" width="434.28" height="16" fill="#2f80ed"/>
+<rect x="594.28" y="284" width="92.86" height="16" fill="#27ae60"/>
+<rect x="687.14" y="284" width="92.86" height="16" fill="#f2994a"/>
+<rect x="160" y="284" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="297" class="tick">926 / 198 / 198</text>
+<text x="24" y="327" class="label">class 8 (826)</text>
+<rect x="160.00" y="314" width="433.85" height="16" fill="#2f80ed"/>
+<rect x="593.85" y="314" width="93.08" height="16" fill="#27ae60"/>
+<rect x="686.92" y="314" width="93.08" height="16" fill="#f2994a"/>
+<rect x="160" y="314" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="327" class="tick">578 / 124 / 124</text>
+<text x="24" y="357" class="label">class 9 (1134)</text>
+<rect x="160.00" y="344" width="434.11" height="16" fill="#2f80ed"/>
+<rect x="594.11" y="344" width="92.95" height="16" fill="#27ae60"/>
+<rect x="687.05" y="344" width="92.95" height="16" fill="#f2994a"/>
+<rect x="160" y="344" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="357" class="tick">794 / 170 / 170</text>
+<text x="24" y="387" class="label">class 10 (1032)</text>
+<rect x="160.00" y="374" width="433.76" height="16" fill="#2f80ed"/>
+<rect x="593.76" y="374" width="93.12" height="16" fill="#27ae60"/>
+<rect x="686.88" y="374" width="93.12" height="16" fill="#f2994a"/>
+<rect x="160" y="374" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="387" class="tick">722 / 155 / 155</text>
+<text x="24" y="417" class="label">class 11 (1981)</text>
+<rect x="160.00" y="404" width="434.09" height="16" fill="#2f80ed"/>
+<rect x="594.09" y="404" width="92.95" height="16" fill="#27ae60"/>
+<rect x="687.05" y="404" width="92.95" height="16" fill="#f2994a"/>
+<rect x="160" y="404" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="417" class="tick">1387 / 297 / 297</text>
+<text x="24" y="447" class="label">class 12 (96)</text>
+<rect x="160.00" y="434" width="439.17" height="16" fill="#2f80ed"/>
+<rect x="599.17" y="434" width="90.42" height="16" fill="#27ae60"/>
+<rect x="689.58" y="434" width="90.42" height="16" fill="#f2994a"/>
+<rect x="160" y="434" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="447" class="tick">68 / 14 / 14</text>
+<text x="24" y="477" class="label">class 13 (1617)</text>
+<rect x="160.00" y="464" width="434.04" height="16" fill="#2f80ed"/>
+<rect x="594.04" y="464" width="92.79" height="16" fill="#27ae60"/>
+<rect x="686.83" y="464" width="93.17" height="16" fill="#f2994a"/>
+<rect x="160" y="464" width="620" height="16" fill="none" stroke="#cbd2d9" stroke-width="1"/>
+<text x="794" y="477" class="tick">1132 / 242 / 243</text>
+</svg>
