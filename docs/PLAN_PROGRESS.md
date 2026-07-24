@@ -90,12 +90,44 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
   - COCO bbox [x, y, w, h] → YOLO <cls> <cx> <cy> <w> <h> (normalized)
   - 每张图一个 .txt 文件
 
-**下一步（Phase 2 实际执行）：**
-- 在 Kaggle Notebook 挂载 `corochann/vinbigdata-chest-xray-original-png` + `train.csv` + `images.csv`
-- 运行 `apply_clahe.py` 产出处理后 PNG（或直接用原始 PNG + 仅做融合，视算力）
-- 运行 `label_fusion.py` 产出三版 COCO 标注
-- Phase 2.4 融合消融实验：YOLOv8n 20ep 分别在三版上训练，对比 val mAP
-- 根据消融结果锁定最终融合策略，运行 `convert_coco_yolo.py` 生成 YOLO 格式
+**Phase 2 Kaggle 实际执行完成（2026-07-24）：**
+
+- Kaggle kernel：`kinjaza/phase2-preprocessing`
+- 最新状态：`COMPLETE`
+- 运行环境：Kaggle Notebook，Tesla P100-PCIE-16GB；P100 下安装 `torch==2.4.0` / `torchvision==0.19.0`
+- 数据源：直接使用 `corochann/vinbigdata-chest-xray-original-png` 的 original PNG；本轮没有额外跑 CLAHE 增强
+- 路径确认：
+  - PNG train dir：`/kaggle/input/datasets/corochann/vinbigdata-chest-xray-original-png/train`
+  - `data/processed/images_png` 成功 symlink 到上述目录
+  - 识别 PNG：15,000 张
+- 修复过的关键问题：
+  - Kaggle mount 实际路径是 `/kaggle/input/datasets/...`，不是早期脚本假设的 `/kaggle/input/<dataset>/...`
+  - `train_meta.csv` 中 `dim0=height`、`dim1=width`，已在 `label_fusion.py` 显式处理
+  - 消融脚本不能复制 15,000 张 PNG 到 `/kaggle/working`，否则触发 `No space left on device`；已改为在 YOLO split 目录下逐文件 symlink
+  - 训练异常不再静默写成 `mAP=0.0`，数据/标签计数不一致会直接报错
+- 三版 COCO 标注产出：
+  - raw：15,000 images / 36,096 annotations
+  - wbf：15,000 images / 23,934 annotations
+  - nms：15,000 images / 24,034 annotations
+- YOLO 消融数据校验：
+  - split：12,000 train / 3,000 val
+  - image links：12,000 train / 3,000 val / 0 skipped
+  - labels：12,000 train txt / 3,000 val txt
+  - Ultralytics scan：0 corrupt
+- Phase 2.4 融合策略消融结果（YOLOv8n，20 epochs）：
+
+| fusion_mode | mAP@0.5 | mAP@0.5:0.95 |
+|---|---:|---:|
+| raw | 0.2812 | 0.1385 |
+| wbf | **0.3210** | **0.1662** |
+| nms | 0.3043 | 0.1403 |
+
+**结论：最终融合策略锁定为 `wbf`。**
+
+**剩余注意事项：**
+- 本轮 full-data 三组消融耗时很长（约 9.9 小时量级），后续不应频繁全量重跑；调试优先加小样本/低 epoch smoke test。
+- val 中背景图比例高（日志示例：3,000 val images / 2,121 backgrounds），符合 VinBigData 大量 No Finding 的特征，但 Phase 3 正式 split 时仍需做类别/正负比例校验。
+- P100 下 `torchaudio` 与 PyTorch 版本有依赖警告，但不影响当前检测训练；后续可考虑卸载 `torchaudio` 或固定更干净的 requirements。
 
 ---
 

@@ -53,6 +53,18 @@ cxr-detectbench/
 
 ## 结果
 
+### 当前里程碑：Phase 2 融合消融
+
+2026-07-24，Kaggle `kinjaza/phase2-preprocessing` 已跑通 Phase 2.4 融合策略消融（YOLOv8n, 20 epochs, 12k/3k split）：
+
+| fusion_mode | mAP@0.5 | mAP@0.5:0.95 |
+|---|---:|---:|
+| raw | 0.2812 | 0.1385 |
+| wbf | **0.3210** | **0.1662** |
+| nms | 0.3043 | 0.1403 |
+
+当前结论：后续默认采用 `wbf` 作为多标注融合策略。完整执行细节见 [docs/PLAN_PROGRESS.md](docs/PLAN_PROGRESS.md)。
+
 > 待回填（Phase 6 完成后）。预期产出：五模型 mAP@0.5 / mAP@0.5:0.95 / mAP@0.4 / FROC / FPS / 参数量对比总表 + 精度-速度 Pareto 图 + FROC 曲线。
 
 ## Demo

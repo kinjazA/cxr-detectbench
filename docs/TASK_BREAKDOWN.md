@@ -41,16 +41,17 @@
 - 本项目重点：CLAHE 增强 + 多标注融合管道（WBF/NMS 消融是核心卖点）
 - README 诚实说明数据来源
 
-- [ ] 2.1 写 `scripts/apply_clahe.py`：读 PNG → CLAHE 增强 → 灰度转 3 通道 → 存 `images_png/`；保留处理前后对比图（供 README）
-- [ ] 2.2 灰度转 3 通道方案选定：复制通道 / 伪彩色二选一，在脚本注释记理由
-- [ ] 2.3 写 `scripts/label_fusion.py`，产出三版 COCO 标注：
+- [x] 2.1 写 `scripts/apply_clahe.py`：读 PNG → CLAHE 增强 → 灰度转 3 通道 → 存 `images_png/`；保留处理前后对比图（供 README）
+- [x] 2.2 灰度转 3 通道方案选定：复制通道 / 伪彩色二选一，在脚本注释记理由
+- [x] 2.3 写 `scripts/label_fusion.py`，产出三版 COCO 标注：
       - `labels_coco/raw/`：3 医生框全保留
       - `labels_coco/wbf/`：`ensemble-boxes` 的 `weighted_boxes_fusion`，IoU 阈值先 0.5
       - `labels_coco/nms/`：简单 NMS 去重
-- [ ] 2.4 **融合策略消融实验**：YOLOv8n 少量 epoch（如 20ep），分别在三版标注上训练，对比 val mAP，产出"融合方式 vs mAP"表 → 锁定最终融合策略（IoU 阈值可再做一次消融）
-- [ ] 2.5 写 `scripts/convert_coco_yolo.py`：从选定融合标注生成完整 COCO json（MMDet 用）+ YOLO txt（Ultralytics 用）
+- [x] 2.4 **融合策略消融实验**：YOLOv8n 少量 epoch（如 20ep），分别在三版标注上训练，对比 val mAP，产出"融合方式 vs mAP"表 → 锁定最终融合策略（IoU 阈值可再做一次消融）
+      - 2026-07-24 Kaggle 完成：raw 0.2812 / wbf 0.3210 / nms 0.3043（mAP@0.5），最终策略：`wbf`
+- [x] 2.5 写 `scripts/convert_coco_yolo.py`：从选定融合标注生成完整 COCO json（MMDet 用）+ YOLO txt（Ultralytics 用）
 
-**验收**：`data/processed/` 下有完整 PNG + 双格式标注 + 一份融合消融结果表。
+**验收**：Phase 2 融合消融已完成并记录在 `docs/PLAN_PROGRESS.md`；本轮成功链路直接使用 original PNG，CLAHE 是否纳入正式训练留到 Phase 3/4 决策。
 
 ---
 
