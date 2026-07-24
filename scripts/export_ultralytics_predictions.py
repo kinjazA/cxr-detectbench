@@ -13,33 +13,66 @@ except ImportError:
     from evaluate_detection import load_split_image_ids, validate_predictions
 
 
+class DegenerateBoxError(ValueError):
+    """Raised when a model prediction has no positive box area."""
+
+
 def xyxy_to_xywh(box: Sequence[float]) -> list[float]:
     if len(box) != 4:
         raise ValueError("xyxy box must contain exactly four values")
     x_min, y_min, x_max, y_max = (float(value) for value in box)
     if x_max <= x_min or y_max <= y_min:
-        raise ValueError("xyxy box must have positive width and height")
+        raise DegenerateBoxError("xyxy box must have positive width and height")
     return [x_min, y_min, x_max - x_min, y_max - y_min]
 
 
-def result_to_coco(result) -> list[dict]:
+MAX_INVALID_BOX_EXAMPLES = 5
+
+
+def result_to_coco(
+    result,
+    *,
+    invalid_box_examples: list[dict] | None = None,
+) -> tuple[list[dict], int]:
     image_id = Path(result.path).stem
     if result.boxes is None:
-        return []
+        return [], 0
     xyxy = result.boxes.xyxy.detach().cpu().tolist()
     scores = result.boxes.conf.detach().cpu().tolist()
     categories = result.boxes.cls.detach().cpu().tolist()
     if not len(xyxy) == len(scores) == len(categories):
         raise RuntimeError("Ultralytics returned inconsistent box, score, and class counts")
-    return [
-        {
-            "image_id": image_id,
-            "category_id": int(category_id),
-            "bbox": xyxy_to_xywh(box),
-            "score": float(score),
-        }
-        for box, score, category_id in zip(xyxy, scores, categories)
-    ]
+
+    predictions = []
+    skipped_invalid_boxes = 0
+    for box, score, category_id in zip(xyxy, scores, categories):
+        try:
+            bbox = xyxy_to_xywh(box)
+        except DegenerateBoxError as error:
+            skipped_invalid_boxes += 1
+            if (
+                invalid_box_examples is not None
+                and len(invalid_box_examples) < MAX_INVALID_BOX_EXAMPLES
+            ):
+                invalid_box_examples.append(
+                    {
+                        "image_id": image_id,
+                        "category_id": int(category_id),
+                        "score": float(score),
+                        "xyxy": [float(value) for value in box],
+                        "reason": str(error),
+                    }
+                )
+            continue
+        predictions.append(
+            {
+                "image_id": image_id,
+                "category_id": int(category_id),
+                "bbox": bbox,
+                "score": float(score),
+            }
+        )
+    return predictions, skipped_invalid_boxes
 
 
 def export_predictions(
@@ -83,12 +116,19 @@ def export_predictions(
 
     predictions: list[dict] = []
     seen_image_ids: set[str] = set()
+    skipped_invalid_boxes = 0
+    invalid_box_examples: list[dict] = []
     for result in results:
         image_id = Path(result.path).stem
         if image_id in seen_image_ids:
             raise RuntimeError(f"Ultralytics returned duplicate image ID: {image_id}")
         seen_image_ids.add(image_id)
-        predictions.extend(result_to_coco(result))
+        image_predictions, image_skipped = result_to_coco(
+            result,
+            invalid_box_examples=invalid_box_examples,
+        )
+        predictions.extend(image_predictions)
+        skipped_invalid_boxes += image_skipped
     elapsed_seconds = time.perf_counter() - start
 
     if expected is not None and seen_image_ids != expected:
@@ -115,6 +155,8 @@ def export_predictions(
         "confidence": confidence,
         "nms_iou": nms_iou,
         "max_detections": max_detections,
+        "skipped_invalid_boxes": skipped_invalid_boxes,
+        "invalid_box_examples": invalid_box_examples,
         "elapsed_seconds": elapsed_seconds,
         "milliseconds_per_image": (
             elapsed_seconds * 1000 / len(seen_image_ids) if seen_image_ids else None
