@@ -5,17 +5,17 @@
 执行总原则：
 - 训练在 **Kaggle** 跑；本仓库存脚本 / config / notebook 源码。
 - CPU 数据处理与 GPU 训练拆成不同 Notebook。
-- 所有训练脚本支持从 checkpoint 续训。
+- 长训练脚本应支持从 checkpoint 续训；当前 `scripts/train_yolo_baseline.py` 尚未暴露 `--resume`，下次训练前必须补齐或明确从头训练的风险。
 - 每次本地改动后提交推送；Kaggle 上产出的中间产物 Save Version 成 Kaggle Dataset 供下个 session 挂载。
 
 ---
 
 ## Phase 0：环境与工程基建
 
-- [ ] 0.1 本地仓库骨架（README / LICENSE / .gitignore / 目录）✅ 已完成
-- [ ] 0.2 在 Kaggle 新建 Notebook，Add Input 挂载 `vinbigdata-chest-xray-abnormalities-detection` 竞赛数据集
+- [x] 0.1 本地仓库骨架（README / LICENSE / .gitignore / 目录）
+- [x] 0.2 在 Kaggle 新建 private Notebook，Add Input 挂载 `vinbigdata-chest-xray-abnormalities-detection` 竞赛数据集及确认过的 PNG / metadata 输入
 - [ ] 0.3 在 Kaggle Notebook 安装依赖：`pip install ultralytics pydicom opencv-python-headless albumentations ensemble-boxes pycocotools onnx onnxruntime gradio` + `mim install mmengine mmcv mmdet`
-- [ ] 0.4 跑 `yolo checks` 与 `mim list`，确认 ultralytics / mmdet 版本，把版本号记入 PLAN_PROGRESS.md
+- [x] 0.4 已验证 YOLO 运行环境并记录实际版本：Python 3.12.13 / torch 2.4.0+cu121 / torchvision 0.19.0+cu121 / Ultralytics 8.4.104 / pycocotools 2.0.10；MMDetection 环境仍待实际验证
 - [ ] 0.5 在本仓库的 `scripts/requirements.txt` 冻结一版依赖（标明实际版本）
 - [ ] 0.6 设计 checkpoint 持久化流程：每阶段训练结束 `Save Version` 成 Kaggle Dataset `cxr-detectbench-ckpt-<phase>`，下个 session Add Data 挂载续训；在 README/PLAN_PROGRESS 里登记每个 Dataset 的引用路径
 
@@ -75,9 +75,10 @@
 - [x] 4.1 YOLOv8n 跑通"训练 → 验证 → 推理 → mAP"完整链路（不追求分数，只验流程）✅ 2026-07-24 Kaggle 3 epoch smoke test：mAP@0.5=0.1998 / mAP@0.5:0.95=0.1002
 - [x] 4.1b YOLOv8n 正式 baseline：P100 配置 `imgsz=640, epochs=50, batch=16, workers=4, cache=False`，6.874 小时完成；best val mAP@0.5=0.3692 / mAP@0.5:0.95=0.1931
 - [x] 4.2 确认 COCO 标注可被 pycocotools 2.0.10 正确加载评估；已用实际 WBF JSON + 2,250 张 val split 验证
+- [x] 4.2b 从真实 `best.pt` 导出全部 val 预测并完成统一 COCO/FROC 评估：mAP50-95=0.1812、AP40=0.3806、AP50=0.3499、AP75=0.1694；完整结果见 `RESULTS_PHASE4_YOLO.md`
 - [ ] 4.3 确认可视化脚本可用：预测框 + GT 框对比图
 
-**验收**：训练和框架原生 val 已完成；待统一预测导出/评估和 GT 对比可视化后关闭 Phase 4。
+**验收**：训练、框架原生 val 和统一预测导出/评估已完成；GT 对比可视化完成后关闭 Phase 4。
 
 ---
 
@@ -91,7 +92,8 @@
 - [ ] 5.2 **RetinaNet (R50-FPN)** — `configs/mmdet_retinanet_cxr.py`
       - **重点**：Focal Loss α/γ 消融，对比不同 γ 对稀有类别召回率影响
 - [ ] 5.3 **YOLO (v8/v11/最新稳定)** — `configs/yolo_cxr.yaml`
-      - imgsz=1024, epochs=100；稀有类别 copy-paste 增强；最后 10% epoch 关 mosaic
+      - 已有冻结 baseline：YOLOv8n、imgsz=640、epochs=50、batch=16。
+      - 下一候选：先验证高分辨率（候选 imgsz=896）；只有该方向有效后再引入 copy-paste 或关闭 mosaic，避免同时改变多个变量。
 - [ ] 5.4 **RT-DETR** — 用 `rtdetr-l.pt`
       - imgsz=1024, epochs=72 起；调 decoder query 数；调去噪训练比例
 - [ ] 5.5 **DINO** — `configs/mmdet_dino_cxr.py`
@@ -109,14 +111,14 @@
 ## Phase 6：统一评估体系
 
 - [x] 6.0 冻结跨框架预测契约与评估协议：`docs/EVALUATION_PROTOCOL.md`
-- [x] 6.1 实现标准 COCO 指标：mAP@0.5 / mAP@0.5:0.95 / per-class AP；待真实 baseline predictions 回填结果
-- [x] 6.2 实现同一 COCO 101 点插值协议下的 AP@0.4，明确其为领域补充指标而非比赛指标
-- [ ] 6.3 **FROC 曲线** `scripts/eval_froc.py`：类别感知病灶级计算和固定 FP/image operating points 已实现并测试；待真实预测与多模型叠加图
+- [x] 6.1 实现并运行标准 COCO 指标：真实 baseline 的 mAP50-95=0.1812、AP50=0.3499，且已生成逐类 AP
+- [x] 6.2 实现并运行同一 COCO 101 点插值协议下的 AP@0.4：真实 baseline AP40=0.3806；其为领域补充指标而非比赛指标
+- [x] 6.3 **FROC 曲线** `scripts/eval_froc.py`：类别感知病灶级计算、固定 FP/image operating points 和真实 baseline 结果已完成；多模型叠加图待后续模型产生
 - [ ] 6.4 图像级二分类指标：检测结果聚合为"该图是否有异常"，算 AUC / 敏感度 / 特异度
 - [ ] 6.5 参数量 / FLOPs / 推理 FPS 对比，画精度-速度 Pareto 图
 - [ ] 6.6 汇总总表：模型 × (mAP@0.5, mAP@0.5:0.95, mAP@0.4, FROC敏感度@某FP率, FPS, 参数量)
 
-**验收**：五模型对比总表 + FROC 曲线 + Pareto 图（README 核心图表）。
+**验收**：当前已完成协议和单模型实测；最终关闭条件仍是五模型对比总表 + FROC 曲线 + Pareto 图（README 核心图表）。
 
 ---
 

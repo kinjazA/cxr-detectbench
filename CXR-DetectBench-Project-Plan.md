@@ -2,6 +2,8 @@
 
 > **给 Claude Code 的说明**：本文档是本项目的完整执行计划，按 Phase 0-9 顺序推进。每个 Phase 下有 `- [ ]` 格式的任务清单和验收标准（Acceptance Criteria）。请按顺序执行，完成一项就把对应 checkbox 改成 `- [x]`，并在每个 Phase 末尾的 `### Notes` 小节里记录实际情况（用的分辨率、遇到的报错和解决方式、实际训练耗时等），这些记录后续会直接用于撰写 README 和简历成果总结，所以要如实、具体地写。如果某一步因为 Kaggle 环境限制（网络/显存/时长）无法按计划执行，请在 Notes 里说明替代方案，不要跳过不记录。
 
+> **状态同步（2026-07-24）**：Phase 1 数据核查、Phase 2 WBF 融合消融、Phase 3 image-level 固定划分、Phase 4 YOLOv8n baseline，以及该 baseline 的统一 COCO/FROC 评估均已完成。完整事实日志见 `docs/PLAN_PROGRESS.md`，不可覆盖的 Phase 4 指标见 `docs/RESULTS_PHASE4_YOLO.md`。patient/study-level split、GT/预测可视化、跨模型比较、图像级 AUC、速度指标和部署仍未完成。本周 Kaggle GPU 配额耗尽，不启动新实验。
+
 ---
 
 ## 0. 项目概览
@@ -124,11 +126,11 @@ cxr-detectbench/
 
 ### Phase 0：环境与工程基建
 
-- [ ] 在 Kaggle 创建项目 Notebook，挂载官方竞赛数据集
-- [ ] 安装第1节列出的全部依赖，运行 `yolo checks` 和 `mim list` 确认环境可用
-- [ ] 建立第2节目录结构
+- [x] 在 Kaggle 创建项目 Notebook，挂载竞赛数据与所需 PNG / metadata 输入
+- [ ] 安装第1节列出的全部依赖，运行 `yolo checks` 和 `mim list` 确认环境可用（YOLO 环境已实测；MMDetection 尚未实测）
+- [x] 建立第2节目录结构
 - [ ] 设计 checkpoint 持久化方案：训练中间产物定期 `Save Version` 为 Kaggle Dataset，供后续 session 挂载续训
-- [ ] 数据处理（CPU密集）与模型训练（GPU密集）拆分成不同 Notebook，避免浪费GPU配额
+- [x] 数据处理（CPU密集）与模型训练（GPU密集）拆分成不同 Notebook，避免浪费GPU配额
 
 **验收标准**：能在一个新开的 Notebook session 里，通过 Add Data 直接拿到 Phase 2 处理好的数据，无需重新跑预处理。
 
@@ -139,9 +141,9 @@ cxr-detectbench/
 
 ### Phase 1：数据获取与初步核查
 
-- [ ] 挂载数据集，读取 `train.csv`，核对实际字段名与第3节表格是否一致
-- [ ] 统计实际的 image 数量、正常/异常图比例、各类别标注框数量，与文档记录的先验数字（10,606/4,394）做交叉验证
-- [ ] 随机抽样若干 DICOM 文件，检查 `WindowCenter`/`WindowWidth`/`RescaleSlope`/`RescaleIntercept` 等关键头信息是否齐全（不齐全的图像需要单独的兜底处理逻辑）
+- [x] 挂载数据集，读取 `train.csv`，核对实际字段名与第3节表格一致
+- [x] 统计实际的 image 数量、正常/异常图比例、各类别标注框数量，与 10,606/4,394 先验交叉验证
+- [x] 核查 DICOM metadata 中 `WindowCenter`/`WindowWidth`/`RescaleSlope`/`RescaleIntercept` 的可用率
 
 **验收标准**：产出一份数据核查小结（数量、字段、异常样本），确认与文档记录一致或记录差异。
 
@@ -152,12 +154,12 @@ cxr-detectbench/
 ### Phase 2：数据预处理
 
 - [ ] **DICOM → PNG**：按窗宽窗位（VOI LUT / WindowCenter+WindowWidth）转换到可视范围，再做 CLAHE 增强，保存为 `data/processed/images_png/`；保留一份处理前后对比图（用于 README 展示）
-- [ ] **多标注融合消融实验**（`scripts/label_fusion.py`）：分别产出三个版本的标注
+- [x] **多标注融合消融实验**（`scripts/label_fusion.py`）：分别产出三个版本的标注
   - `labels_coco/raw/`：3位医生的框全部保留
   - `labels_coco/wbf/`：用 `ensemble-boxes` 库的 `weighted_boxes_fusion` 按 IoU 阈值融合成共识框（IoU阈值建议先尝试 0.5，可再做一次阈值消融）
   - `labels_coco/nms/`：简单 NMS 去重
   - 用一个轻量模型（YOLOv8n，少量 epoch）分别在三版标注上快速训练，对比验证集 mAP，确定最终采用哪种融合策略，**把这组对比结果记录下来，这是本项目最核心的实验之一**
-- [ ] **格式转换**：从最终选定的融合标注版本，生成完整的 COCO json（给 MMDetection 用）和 YOLO txt（给 Ultralytics 用），`scripts/convert_coco_yolo.py`
+- [x] **格式转换**：从最终选定的融合标注版本，生成完整的 COCO json（给 MMDetection 用）和 YOLO txt（给 Ultralytics 用），`scripts/convert_coco_yolo.py`
 - [ ] 灰度图转3通道处理（复制通道或伪彩色映射二选一，记录选择理由）
 
 **验收标准**：`data/processed/` 下有完整的 PNG 图像 + 两种格式标注；有一份"融合策略消融实验"的结果记录（表格：融合方式 vs mAP）。
@@ -168,11 +170,11 @@ cxr-detectbench/
 
 ### Phase 3：EDA 与数据集划分
 
-- [ ] 类别分布柱状图（识别长尾类别，如 Pneumothorax）
-- [ ] 病灶框尺寸分布（识别哪些类别是小目标，指导后续输入分辨率选择）
-- [ ] 正常/异常图比例可视化
+- [x] 类别分布柱状图（识别长尾类别，如 Pneumothorax）
+- [x] 病灶框尺寸分布（识别哪些类别是小目标，指导后续输入分辨率选择）
+- [x] 正常/异常图比例可视化
 - [ ] **按病人/study 级别分层划分** train/val/test（比如 70/15/15），保证：(a) 同一病人不跨集合出现；(b) 各类别在三个集合里的比例基本一致
-- [ ] 划分结果存成 `data/splits/` 下的 csv 索引文件，供所有后续训练脚本统一读取（保证五个模型用的是完全相同的数据划分，这是公平对比的前提）
+- [x] 划分结果存成 `data/splits/` 下的 csv 索引文件，供所有后续训练脚本统一读取（保证五个模型用的是完全相同的数据划分，这是公平对比的前提）
 
 **验收标准**：`data/splits/train.csv / val.csv / test.csv`，附一份类别分布在三个集合里基本一致的验证图。
 
@@ -182,8 +184,8 @@ cxr-detectbench/
 
 ### Phase 4：Baseline 打通全流程
 
-- [ ] 用 YOLOv8n/最新轻量版本，跑通"训练 → 验证 → 推理 → mAP计算"完整链路
-- [ ] 确认 COCO 格式标注可以被 pycocotools 正确加载评估
+- [x] 用 YOLOv8n 跑通"训练 → 验证 → 推理 → mAP计算"完整链路；50 epoch baseline 的框架原生 val mAP50=0.3692、mAP50-95=0.1931
+- [x] 确认 COCO 格式标注可以被 pycocotools 正确加载评估，并在真实 `best.pt` 上完成统一评估：mAP50-95=0.1812、AP40=0.3806、AP50=0.3499、AP75=0.1694
 - [ ] 确认可视化脚本（画预测框+GT框对比图）可用
 
 **验收标准**：产出一次完整的、指标可信的 baseline 结果（不追求分数，只验证流程正确）。
@@ -195,12 +197,14 @@ cxr-detectbench/
 ### Phase 5：五模型训练矩阵
 
 > 五个模型统一用 Phase 3 产出的同一份 train/val/test 划分，统一用 Phase 6 的评估脚本，确保公平对比。
+>
+> 下表的起始配置是待验证候选，不是已经在 Kaggle P100 上确认可运行的事实。每个新框架必须先完成版本、数据路径、显存和短 smoke test 核验；不得因为计划表中写了某个 batch、分辨率或模型名就假定它可用。
 
 | 模型 | 框架/入口 | 建议起始配置 | 本项目的针对性优化方向 |
 |---|---|---|---|
 | Faster R-CNN (R50-FPN) | MMDetection，参考 `configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py` | batch=8, lr=0.01, 12 epoch起步 | 针对小病灶用k-means重新聚类anchor尺寸；调整RPN正负样本采样比例；可加做Cascade R-CNN对比 |
 | RetinaNet (R50-FPN) | MMDetection，参考 `configs/retinanet/retinanet_r50_fpn_1x_coco.py` | 同上 | **重点做 Focal Loss 的 α/γ 消融实验**，对比不同γ对稀有类别（Pneumothorax等）召回率的影响 |
-| YOLO (v8/v11/最新稳定版) | Ultralytics，`yolo detect train` | imgsz=1024（病灶偏小，分辨率不宜太低）, epochs=100 | 高分辨率训练；对稀有类别做copy-paste增强；训练后期（最后10%epoch）关闭mosaic |
+| YOLO (v8/v11/最新稳定版) | Ultralytics，`yolo detect train` | 已冻结 YOLOv8n baseline：imgsz=640, epochs=50, batch=16；下一候选 imgsz=896，需 P100 显存 smoke 确认 | 先验证高分辨率对小目标与高 IoU 的收益，再单独测试 copy-paste 或训练后期关闭 mosaic |
 | RT-DETR | Ultralytics，`model=rtdetr-l.pt` | imgsz=1024, epochs=72起步 | 调整decoder query数量（病灶数通常不多，可减少query降低计算量）；调整去噪训练比例 |
 | DINO | MMDetection，参考 `configs/dino/dino-4scale_r50_8xb2-12e_coco.py` | **加载COCO预训练权重微调，不从零训练**，10-20 epoch + early stopping | 小数据集上容易过拟合，尝试冻结backbone前几层only微调neck+head；控制训练时长 |
 
@@ -217,9 +221,9 @@ cxr-detectbench/
 
 ### Phase 6：统一评估体系
 
-- [ ] 标准 COCO 指标：mAP@0.5、mAP@0.5:0.95、per-class AP
-- [ ] **领域标准 mAP@IoU>0.4**（PASCAL VOC风格，对齐 VinDr-CXR 相关文献的评估惯例），并说明为什么用比COCO更宽松的IoU阈值
-- [ ] **FROC 曲线**（`scripts/eval_froc.py`）：横轴每张图允许的假阳性数，纵轴病灶级别敏感度/召回率，这是医疗CAD系统的临床标准评估方式
+- [x] 标准 COCO 指标：mAP@0.5、mAP@0.5:0.95、per-class AP；已在 YOLO baseline 上实测
+- [x] **领域标准 mAP@IoU>0.4**（PASCAL VOC风格，对齐 VinDr-CXR 相关文献的评估惯例）；YOLO baseline AP40=0.3806
+- [x] **FROC 曲线**（`scripts/eval_froc.py`）：类别感知病灶级 micro 定义已实现并在 YOLO baseline 上实测
 - [ ] 图像级二分类指标：把检测结果聚合成"该图是否有异常"的判断，计算 AUC/敏感度/特异度，对应医生"看一眼判断有无问题"的临床工作流
 - [ ] 参数量/FLOPs/推理FPS对比，画一张"精度-速度" Pareto图
 - [ ] 汇总成一张总表：模型 × (mAP@0.5, mAP@0.5:0.95, mAP@0.4, FROC敏感度@某FP率, FPS, 参数量)
@@ -308,4 +312,4 @@ cxr-detectbench/
 
 ---
 
-*本文档由 Claude 与用户在多轮对话中共同规划完成，作为 Claude Code 执行本项目的主参考文档。执行过程中如有计划调整，请直接编辑本文件保持同步，不要另开文档。*
+*本文档与 `docs/TASK_BREAKDOWN.md` 共同维护计划状态；`docs/PLAN_PROGRESS.md` 保存事实日志，`docs/RESULTS_PHASE4_YOLO.md` 等阶段结果文档保存不可覆盖的指标与分析。执行过程中如有计划调整，请同步更新这些对应文档。*

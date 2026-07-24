@@ -20,8 +20,17 @@
 - `kaggle competitions download ... -f train.csv` 成功下载 1.79MB
 - 认证 ✅ + 网络 ✅ + 竞赛规则已接受 ✅ 三者一次验证通过
 
-### 依赖实际版本
-> 待 Phase 0.4 在 Kaggle 上 `pip list` 后回填。
+### 已验证依赖版本
+
+- Python 3.12.13
+- PyTorch 2.4.0+cu121
+- torchvision 0.19.0+cu121
+- Ultralytics 8.4.104
+- pycocotools 2.0.10
+
+上述版本已用于 Phase 4 smoke、baseline 与统一评估。`scripts/requirements.txt` 尚未完整冻结为这些精确版本，属于下一轮训练前需要补齐的复现性工作。
+
+- 2026-07-17：本地仓库骨架（README / LICENSE / .gitignore / 目录）建立完成。
 
 ---
 
@@ -277,9 +286,36 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 - 实际 WBF COCO JSON + Phase 3 val 2,250 image IDs 已通过 pycocotools 加载和空预测评估测试。
 - 新增 private Kaggle kernel `kinjaza/phase4-yolo-unified-eval`，计划挂载 baseline kernel output，仅在 val 导出预测并运行统一评估，不重新训练、不访问 test。
 
----
+**统一评估实际完成（2026-07-24，`kinjaza/phase4-yolo-unified-eval`）：**
 
-## Phase 0
+- 状态：`COMPLETE`
+- 输入 checkpoint：`kinjaza/phase4-yolo-baseline` 输出中的 `best.pt`
+- 评估数据：Phase 3 val，2,250 张图、3,483 个 GT 病灶框；未访问 test split。
+- 导出参数：`imgsz=640`、`batch=16`、`confidence=0.001`、`nms_iou=0.7`、`max_detections=300`。
+- 统一 evaluator：COCO 101 点插值，最多计入 100 框/图；FROC IoU=0.5。
+- 推理输出：101,132 个预测，282.742 秒，125.663 ms/图；导出适配器跳过 1 个退化框并记录审计样例。
 
-- 0.1 本地仓库骨架完成（README / LICENSE / .gitignore / 目录结构）。2026-07-17
-- Kaggle 环境版本待回填。
+| metric | value |
+|---|---:|
+| mAP50-95 | 0.1812 |
+| AP40 | 0.3806 |
+| AP50 | 0.3499 |
+| AP75 | 0.1694 |
+
+| FP/image | 0.125 | 0.25 | 0.5 | 1 | 2 | 4 |
+|---:|---:|---:|---:|---:|---:|---:|
+| FROC sensitivity | 0.2759 | 0.3299 | 0.3876 | 0.4502 | 0.5177 | 0.5777 |
+
+**结果解读：**
+
+- 统一评估已证明预测导出、COCO AP 和 FROC 可在真实 YOLO checkpoint 上闭环运行。此前的 `xyxy box must have positive width and height` 是单个退化预测框导致的适配器崩溃；修复后只跳过 1 个框，不能影响总体结论。
+- 原生 Ultralytics val 的 `mAP50=0.3692` / `mAP50-95=0.1931` 与统一协议的 `AP50=0.3499` / `mAP50-95=0.1812` 都应保留。后者固定了 evaluator 与 100 框/图上限，不能把二者直接当作同一个指标或将差值归因于模型退化。
+- `AP50` 高于 `mAP50-95`，且 `AP75=0.1694`，说明当前瓶颈不仅是有没有检测到病灶，还包括定位框的精度。Cardiomegaly（AP50-95=0.6058）和 Aortic enlargement（0.5325）最强；Other lesion（0.0325）、Lung Opacity（0.0637）、Calcification（0.0722）与 Pleural thickening（0.0736）最弱。完整逐类表见 `RESULTS_PHASE4_YOLO.md`。
+- 小目标诊断与表现一致：Nodule/Mass、Calcification、Pleural thickening 的 median normalized area 分别为 0.0014、0.0038、0.0044。下一轮优先检验分辨率是否改善高 IoU 和这些类别，而不是仅增加 epoch。
+
+**当前算力状态与后续安排：**
+
+- 用户已确认本周 Kaggle GPU 配额耗尽；本周不启动新的训练或评估运行。
+- 下次 GPU 配额恢复前：补齐 `train_yolo_baseline.py` 的 checkpoint resume，冻结实际依赖版本，并准备 GT/预测可视化与阶段 artifact 归档。
+- 第一项候选实验是提高输入分辨率（候选 `imgsz=896`），保留模型、WBF、split、epoch、seed 与评估协议。若 P100 显存迫使 batch 从 16 调为 8，必须将其明确为资源耦合的分辨率实验，而非严格单变量实验。
+- 只有该实验明确改善 `mAP75`、小目标类别 AP 和 FROC@0.25/0.5/1，才继续沿 YOLO 优化；否则进入 RT-DETR/Faster R-CNN，以满足多范式横评目标。

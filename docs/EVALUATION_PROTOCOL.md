@@ -78,3 +78,12 @@ Each evaluation run writes:
 
 The prediction JSON and framework-native logs remain reproducibility artifacts,
 not additional metric definitions.
+
+## Baseline Reference
+
+The protocol has been exercised on the frozen Phase 4 YOLOv8n baseline over
+the 2,250-image validation split. Its results are `mAP50-95=0.1812`,
+`AP40=0.3806`, `AP50=0.3499`, and `AP75=0.1694`; FROC sensitivity is 0.3876
+at 0.5 FP/image and 0.4502 at 1 FP/image. This is a single-model reference,
+not a multi-paradigm comparison. The complete run record and per-class values
+are retained in `RESULTS_PHASE4_YOLO.md`.
