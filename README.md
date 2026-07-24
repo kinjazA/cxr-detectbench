@@ -138,11 +138,13 @@ Phase 2.4 融合消融结果（YOLOv8n，20 epochs）：
 
 ### Phase 4：Baseline 跑通全链路
 
-状态：未开始。
+状态：smoke test 已通过，正式 baseline 待跑。
 
 目标是用 `wbf` 标注和 Phase 3 固定 split，跑通一次 YOLO baseline 的训练、验证、推理、mAP 计算和可视化。这里不追求最终分数，重点是验证正式训练代码、数据格式、checkpoint、评估脚本和结果保存规范。
 
-阶段分析：Phase 2 已证明 YOLO 能训练并得到非零 mAP，但那是融合消融实验，不等价于正式 baseline。Baseline 阶段要把 split、训练参数、输出目录、日志、权重保存、评估入口统一下来，为后续五模型矩阵减少变量。
+2026-07-24，Kaggle `kinjaza/phase4-yolo-smoke` 用 `wbf` 标注和 Phase 3 split 跑通 3 epoch YOLOv8n smoke test：train/val/test YOLO 数据目录构建通过，val mAP@0.5 = 0.1998，mAP@0.5:0.95 = 0.1002。
+
+阶段分析：Phase 4 的关键风险已经从“路径/标签是否能训”转移到“正式 baseline 参数是否合理”。下一步应先修正 Kaggle output 清理和结果摘要保存，然后跑可复现的 YOLO baseline，而不是继续停留在 smoke test。
 
 ### Phase 5：五模型训练矩阵
 

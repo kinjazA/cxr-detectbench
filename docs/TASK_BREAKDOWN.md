@@ -72,11 +72,11 @@
 ## Phase 4：Baseline 打通全流程
 
 - [x] 4.0 写正式 YOLO 数据集准备脚本：读取 Phase 3 split + WBF COCO，生成 `images/{train,val,test}` symlink、`labels/{train,val,test}` txt 和 `data.yaml` ✅ `scripts/prepare_yolo_dataset.py`
-- [ ] 4.1 YOLOv8n 跑通"训练 → 验证 → 推理 → mAP"完整链路（不追求分数，只验流程）
+- [x] 4.1 YOLOv8n 跑通"训练 → 验证 → 推理 → mAP"完整链路（不追求分数，只验流程）✅ 2026-07-24 Kaggle 3 epoch smoke test：mAP@0.5=0.1998 / mAP@0.5:0.95=0.1002
 - [ ] 4.2 确认 COCO 标注可被 pycocotools 正确加载评估
 - [ ] 4.3 确认可视化脚本可用：预测框 + GT 框对比图
 
-**验收**：一次完整且指标可信的 baseline 结果。4.0 已完成脚本与本地语法检查；正式构建需在 Kaggle 上有 WBF COCO 和 PNG 输入后执行。
+**验收**：流程 smoke test 已通过；一次完整且指标可信的正式 baseline 结果仍待执行。
 
 ---
 

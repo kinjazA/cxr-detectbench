@@ -206,6 +206,32 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 - 本地已通过 `python scripts\prepare_yolo_dataset.py --help`
 - 未在本地执行完整构建，因为本地没有 `data/processed/labels_coco/wbf/annotations.json` 与 `data/processed/images_png`。正式构建应在 Kaggle 处理产物存在后运行。
 
+**Kaggle smoke test 完成（2026-07-24，`kinjaza/phase4-yolo-smoke`）：**
+
+- 状态：`COMPLETE`
+- Git commit：`c3dc322`
+- GPU：Tesla P100-PCIE-16GB
+- Runtime：Python 3.12.13 / torch 2.4.0+cu121 / torchvision 0.19.0+cu121 / ultralytics 8.4.104
+- PNG symlink：`data/processed/images_png -> /kaggle/input/datasets/corochann/vinbigdata-chest-xray-original-png/train`
+- linked PNG count：15,000
+- 正式 YOLO 数据集构建通过：
+
+| split | images | linked_images | label_files | boxes |
+|---|---:|---:|---:|---:|
+| train | 10,500 | 10,500 | 10,500 | 16,941 |
+| val | 2,250 | 2,250 | 2,250 | 3,483 |
+| test | 2,250 | 2,250 | 2,250 | 3,510 |
+
+- YOLOv8n smoke train：3 epochs，imgsz=640，batch=16，约 0.394 小时。
+- Val result：mAP@0.5 = 0.1998，mAP@0.5:0.95 = 0.1002。
+- Val all row：2,250 images / 3,483 instances / P=0.38 / R=0.23 / mAP50=0.20 / mAP50-95=0.10。
+
+**观察与下一步修正：**
+
+- 该结果只是低 epoch smoke test，用于证明正式 split + WBF + YOLO 数据目录链路可训练，不与 Phase 2 20 epoch 融合消融分数直接比较。
+- Kaggle output 文件列表显示 cloned repo 的 `.git` 也进入了输出清单，说明 notebook 结束前需要清理 regenerated files，避免之后下载 output 时过大。
+- Ultralytics 8.4.104 下 `project='runs/phase4'` 实际保存到 `runs/detect/runs/phase4/phase4_yolo_smoke`；notebook 已本地修正为只拷贝小摘要到 `/kaggle/working/phase4_smoke_summary` 并清理大目录。
+
 ---
 
 ## Phase 0
