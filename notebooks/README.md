@@ -8,6 +8,7 @@
 | 02_eda.ipynb | Phase 3 | 类别/尺寸分布 + 划分 | 否 |
 | 03_label_fusion_ablation.ipynb | Phase 2.5 | 三版标注融合消融（YOLOv8n 少量 epoch） | 是(短) |
 | 04_train_yolo.ipynb | Phase 5.3 | YOLO 训练调优 | 是 |
+| phase4_yolo_unified_eval/ | Phase 4/6 | 冻结 YOLO baseline 的统一 COCO AP/FROC 评估 | 是(短) |
 | 05_train_rtdetr.ipynb | Phase 5.4 | RT-DETR 训练调优 | 是 |
 | 06_train_faster_rcnn.ipynb | Phase 5.1 | Faster R-CNN 训练调优 | 是 |
 | 07_train_retinanet.ipynb | Phase 5.2 | RetinaNet + Focal Loss 消融 | 是 |

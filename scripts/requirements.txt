@@ -12,7 +12,7 @@ pydicom
 opencv-python-headless
 albumentations         # 数据增强，含 CLAHE
 ensemble-boxes         # WBF 多标注融合
-pycocotools            # COCO 格式训练/评估
+pycocotools==2.0.10    # 统一 COCO 评估，本地与 Kaggle 固定同一版本
 
 # --- evaluation & viz ---
 scikit-learn           # StratifiedKFold

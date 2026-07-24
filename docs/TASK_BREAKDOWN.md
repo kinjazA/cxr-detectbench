@@ -73,11 +73,11 @@
 
 - [x] 4.0 写正式 YOLO 数据集准备脚本：读取 Phase 3 split + WBF COCO，生成 `images/{train,val,test}` symlink、`labels/{train,val,test}` txt 和 `data.yaml` ✅ `scripts/prepare_yolo_dataset.py`
 - [x] 4.1 YOLOv8n 跑通"训练 → 验证 → 推理 → mAP"完整链路（不追求分数，只验流程）✅ 2026-07-24 Kaggle 3 epoch smoke test：mAP@0.5=0.1998 / mAP@0.5:0.95=0.1002
-- [ ] 4.1b YOLOv8n 正式 baseline：P100 保守配置 `imgsz=640, epochs=50, batch=16, workers=4, cache=False`，产出 compact summary + best/last checkpoint
-- [ ] 4.2 确认 COCO 标注可被 pycocotools 正确加载评估
+- [x] 4.1b YOLOv8n 正式 baseline：P100 配置 `imgsz=640, epochs=50, batch=16, workers=4, cache=False`，6.874 小时完成；best val mAP@0.5=0.3692 / mAP@0.5:0.95=0.1931
+- [x] 4.2 确认 COCO 标注可被 pycocotools 2.0.10 正确加载评估；已用实际 WBF JSON + 2,250 张 val split 验证
 - [ ] 4.3 确认可视化脚本可用：预测框 + GT 框对比图
 
-**验收**：流程 smoke test 已通过；正式 baseline kernel `kinjaza/phase4-yolo-baseline` 已准备，结果仍待执行。
+**验收**：训练和框架原生 val 已完成；待统一预测导出/评估和 GT 对比可视化后关闭 Phase 4。
 
 ---
 
@@ -108,9 +108,10 @@
 
 ## Phase 6：统一评估体系
 
-- [ ] 6.1 标准 COCO 指标：mAP@0.5 / mAP@0.5:0.95 / per-class AP
-- [ ] 6.2 **领域标准 mAP@IoU>0.4**（PASCAL VOC 风格，对齐 VinDr-CXR 文献惯例），README 说明为何用比 COCO 更宽松的 IoU
-- [ ] 6.3 **FROC 曲线** `scripts/eval_froc.py`：横轴每图假阳性数，纵轴病灶级敏感度
+- [x] 6.0 冻结跨框架预测契约与评估协议：`docs/EVALUATION_PROTOCOL.md`
+- [x] 6.1 实现标准 COCO 指标：mAP@0.5 / mAP@0.5:0.95 / per-class AP；待真实 baseline predictions 回填结果
+- [x] 6.2 实现同一 COCO 101 点插值协议下的 AP@0.4，明确其为领域补充指标而非比赛指标
+- [ ] 6.3 **FROC 曲线** `scripts/eval_froc.py`：类别感知病灶级计算和固定 FP/image operating points 已实现并测试；待真实预测与多模型叠加图
 - [ ] 6.4 图像级二分类指标：检测结果聚合为"该图是否有异常"，算 AUC / 敏感度 / 特异度
 - [ ] 6.5 参数量 / FLOPs / 推理 FPS 对比，画精度-速度 Pareto 图
 - [ ] 6.6 汇总总表：模型 × (mAP@0.5, mAP@0.5:0.95, mAP@0.4, FROC敏感度@某FP率, FPS, 参数量)

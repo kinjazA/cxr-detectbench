@@ -256,6 +256,27 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
   - 不开 image cache，避免再次触发 Kaggle disk 压力。
   - 不评估 test split，test 留给最终模型或阶段性冻结模型，避免过早对测试集调参。
 
+**正式 baseline 完成（2026-07-24，`kinjaza/phase4-yolo-baseline`）：**
+
+- 状态：`COMPLETE`
+- GPU：Tesla P100-PCIE-16GB
+- Runtime：6.874 小时
+- 实际环境：Ultralytics 8.4.104 / PyTorch 2.4.0+cu121
+- `best.pt` val：Precision=0.4613，Recall=0.3746，mAP@0.5=0.3692，mAP@0.5:0.95=0.1931
+- 训练曲线：epoch 20 为 0.2943/0.1502，epoch 40 为 0.3583/0.1843，epoch 49 为 0.3696/0.1930；验证损失低点主要在 epoch 33-35。
+- 类别差异：Cardiomegaly=0.892、Aortic enlargement=0.852；六类 mAP@0.5 低于 0.30。
+- `optimizer=auto` 实际选择 AdamW、lr=0.000556，配置默认值 `lr0=0.01` 未生效；后续消融必须显式固定 optimizer 和学习率。
+
+**统一评估基础开始实现（2026-07-24）：**
+
+- 新增 `docs/EVALUATION_PROTOCOL.md`，冻结跨框架 COCO prediction JSON 契约。
+- 新增 `scripts/evaluate_detection.py`：统一计算 COCO mAP@0.5:0.95、AP@0.4/0.5/0.75 和 per-class AP。
+- 实现 `scripts/eval_froc.py`：类别感知、病灶级 micro FROC，正常片计入 FP/image 分母。
+- 新增 `scripts/export_ultralytics_predictions.py`，将 YOLO/RT-DETR 输出适配到共享预测格式。
+- 本地 `.venv` 安装并固定 `pycocotools==2.0.10`；9 个确定性单元测试通过。
+- 实际 WBF COCO JSON + Phase 3 val 2,250 image IDs 已通过 pycocotools 加载和空预测评估测试。
+- 新增 private Kaggle kernel `kinjaza/phase4-yolo-unified-eval`，计划挂载 baseline kernel output，仅在 val 导出预测并运行统一评估，不重新训练、不访问 test。
+
 ---
 
 ## Phase 0
