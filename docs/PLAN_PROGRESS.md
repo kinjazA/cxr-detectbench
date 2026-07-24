@@ -232,6 +232,30 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 - Kaggle output 文件列表显示 cloned repo 的 `.git` 也进入了输出清单，说明 notebook 结束前需要清理 regenerated files，避免之后下载 output 时过大。
 - Ultralytics 8.4.104 下 `project='runs/phase4'` 实际保存到 `runs/detect/runs/phase4/phase4_yolo_smoke`；notebook 已本地修正为只拷贝小摘要到 `/kaggle/working/phase4_smoke_summary` 并清理大目录。
 
+**正式 baseline 入口准备完成（2026-07-24）：**
+
+- 新增脚本：`scripts/train_yolo_baseline.py`
+- 新增 Kaggle kernel：`kinjaza/phase4-yolo-baseline`
+- 第一版 P100 保守参数：
+  - model：`yolov8n.pt`
+  - fusion：`wbf`
+  - split：Phase 3 fixed 70/15/15
+  - imgsz：640
+  - epochs：50
+  - batch：16
+  - workers：4
+  - cache：False
+  - seed：42
+  - patience：0（固定跑满 50 epoch，便于和后续实验比较）
+- 输出策略：
+  - 保留 `/kaggle/working/yolo_baseline_summary`
+  - 保存 `metrics.json`、`metrics.txt`、`per_class_metrics.csv`、`dataset_summary.csv`、`results.csv`、`args.yaml`、`weights/best.pt`、`weights/last.pt`
+  - notebook 结束前清理 cloned repo、生成的 YOLO 数据目录和完整 run 目录，避免 Kaggle output 过大。
+- 取舍说明：
+  - 不用 `imgsz=1024` 作为第一版 baseline，避免 P100 显存和耗时风险。
+  - 不开 image cache，避免再次触发 Kaggle disk 压力。
+  - 不评估 test split，test 留给最终模型或阶段性冻结模型，避免过早对测试集调参。
+
 ---
 
 ## Phase 0

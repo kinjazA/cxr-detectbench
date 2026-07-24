@@ -1,0 +1,19 @@
+{
+  "id": "kinjaza/phase4-yolo-baseline",
+  "title": "Phase4 YOLO Baseline",
+  "code_file": "phase4_yolo_baseline.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "corochann/vinbigdata-chest-xray-original-png",
+    "sunhwan/vinbigdata-chest-xray-dicom-metadata"
+  ],
+  "competition_sources": [
+    "vinbigdata-chest-xray-abnormalities-detection"
+  ],
+  "kernel_sources": []
+}
