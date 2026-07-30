@@ -53,5 +53,8 @@ wandb/
 mlruns/
 *.log
 
-# --- Jupyter (allow notebooks, ignore checkpoints already above) ---cxr-detectbench/
+# --- Jupyter (allow notebooks, ignore checkpoints already above) ---
+
+# --- Local generated indexes / Kaggle output snapshots ---
+.codegraph/
 kaggle_output/

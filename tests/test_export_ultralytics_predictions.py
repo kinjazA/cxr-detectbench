@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from scripts.export_ultralytics_predictions import result_to_coco, xyxy_to_xywh
+from scripts.phase6_evaluation.export_ultralytics_predictions import result_to_coco, xyxy_to_xywh
 
 
 class FakeTensor:

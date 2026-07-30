@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.evaluate_detection import evaluate_coco, validate_predictions
+from scripts.phase6_evaluation.evaluate_detection import evaluate_coco, validate_predictions
 
 
 class DetectionEvaluationTests(unittest.TestCase):

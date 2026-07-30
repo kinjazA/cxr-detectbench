@@ -83,19 +83,19 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 
 **脚本实现完成（2026-07-17）：**
 
-- `scripts/apply_clahe.py` ✅ 
+- `scripts/phase2_preprocessing/apply_clahe.py` ✅
   - 输入：PNG（来自 corochann/...-original-png）
   - 流程：CLAHE (clip_limit=2.0, tile_size=8) → 灰度转 3 通道（复制通道方案）
   - 输出：处理后 PNG + 对比图（Phase 2.2）
   - 灰度转 3 通道理由已在脚本注释说明：保留原始灰度语义、适配 ImageNet 预训练、无额外计算开销
 
-- `scripts/label_fusion.py` ✅
+- `scripts/phase2_preprocessing/label_fusion.py` ✅
   - 产出三版 COCO 标注：raw（全保留）/ wbf（ensemble-boxes weighted_boxes_fusion）/ nms（简单 NMS）
   - 支持 IoU 阈值调整（默认 0.5，Phase 2.4 消融时可做阈值扫描）
   - 按 class_id 分组融合（per-class WBF/NMS）
   - 过滤 No finding（class_id=14）
 
-- `scripts/convert_coco_yolo.py` ✅
+- `scripts/phase2_preprocessing/convert_coco_yolo.py` ✅
   - COCO bbox [x, y, w, h] → YOLO <cls> <cx> <cy> <w> <h> (normalized)
   - 每张图一个 .txt 文件
 
@@ -144,7 +144,7 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 
 **第一版正式 split 生成完成（2026-07-24）：**
 
-- 新增脚本：`scripts/prepare_phase3_splits.py`
+- 新增脚本：`scripts/phase3_splits/prepare_phase3_splits.py`
 - 输入：
   - `data/raw/train.csv`
   - `data/raw/images.csv`（用于读取 Rows/Columns 计算 bbox 归一化尺寸）
@@ -178,7 +178,7 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 **限制与决策：**
 
 - 本地 `data/raw/images.csv` 暂未发现可靠 patient_id/study_id 字段，只有 `PatientSex`、`PatientAge`、`Rows`、`Columns`、`fname` 等 metadata。因此当前不能声称 patient-level 或 study-level split，只能明确为 image-level stratified split。
-- `scripts/prepare_phase3_splits.py` 中加入质量闸门：split 覆盖/互斥/大小检查，以及每类图片级 split-rate 最大偏差阈值（默认 0.03）。后续换 seed 或比例时，如果划分明显跑偏会直接报错。
+- `scripts/phase3_splits/prepare_phase3_splits.py` 中加入质量闸门：split 覆盖/互斥/大小检查，以及每类图片级 split-rate 最大偏差阈值（默认 0.03）。后续换 seed 或比例时，如果划分明显跑偏会直接报错。
 
 **结论：Phase 3 第一版正式划分可进入 Phase 4 baseline smoke test。**
 
@@ -188,7 +188,7 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 
 **正式 YOLO 数据集准备脚本已新增（2026-07-24）：**
 
-- 新增脚本：`scripts/prepare_yolo_dataset.py`
+- 新增脚本：`scripts/phase4_yolo/prepare_yolo_dataset.py`
 - 目标：读取 Phase 3 固定 split 和最终 `wbf` COCO 标注，生成 Ultralytics 可直接读取的数据目录。
 - 默认输入：
   - `data/processed/labels_coco/wbf/annotations.json`
@@ -211,8 +211,8 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 
 **当前验证状态：**
 
-- 本地已通过 `python -m py_compile scripts\prepare_yolo_dataset.py`
-- 本地已通过 `python scripts\prepare_yolo_dataset.py --help`
+- 本地已通过 `python -m py_compile scripts\phase4_yolo\prepare_yolo_dataset.py`
+- 本地已通过 `python scripts\phase4_yolo\prepare_yolo_dataset.py --help`
 - 未在本地执行完整构建，因为本地没有 `data/processed/labels_coco/wbf/annotations.json` 与 `data/processed/images_png`。正式构建应在 Kaggle 处理产物存在后运行。
 
 **Kaggle smoke test 完成（2026-07-24，`kinjaza/phase4-yolo-smoke`）：**
@@ -243,7 +243,7 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 
 **正式 baseline 入口准备完成（2026-07-24）：**
 
-- 新增脚本：`scripts/train_yolo_baseline.py`
+- 新增脚本：`scripts/phase4_yolo/train_yolo_baseline.py`
 - 新增 Kaggle kernel：`kinjaza/phase4-yolo-baseline`
 - 第一版 P100 保守参数：
   - model：`yolov8n.pt`
@@ -279,9 +279,9 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 **统一评估基础开始实现（2026-07-24）：**
 
 - 新增 `docs/EVALUATION_PROTOCOL.md`，冻结跨框架 COCO prediction JSON 契约。
-- 新增 `scripts/evaluate_detection.py`：统一计算 COCO mAP@0.5:0.95、AP@0.4/0.5/0.75 和 per-class AP。
-- 实现 `scripts/eval_froc.py`：类别感知、病灶级 micro FROC，正常片计入 FP/image 分母。
-- 新增 `scripts/export_ultralytics_predictions.py`，将 YOLO/RT-DETR 输出适配到共享预测格式。
+- 新增 `scripts/phase6_evaluation/evaluate_detection.py`：统一计算 COCO mAP@0.5:0.95、AP@0.4/0.5/0.75 和 per-class AP。
+- 实现 `scripts/phase6_evaluation/eval_froc.py`：类别感知、病灶级 micro FROC，正常片计入 FP/image 分母。
+- 新增 `scripts/phase6_evaluation/export_ultralytics_predictions.py`，将 YOLO/RT-DETR 输出适配到共享预测格式。
 - 本地 `.venv` 安装并固定 `pycocotools==2.0.10`；9 个确定性单元测试通过。
 - 实际 WBF COCO JSON + Phase 3 val 2,250 image IDs 已通过 pycocotools 加载和空预测评估测试。
 - 新增 private Kaggle kernel `kinjaza/phase4-yolo-unified-eval`，计划挂载 baseline kernel output，仅在 val 导出预测并运行统一评估，不重新训练、不访问 test。

@@ -1,7 +1,7 @@
 # CXR-DetectBench
 ## 胸部 X 光多范式目标检测基准系统
 
-项目状态：在建。Phase 1-4 的数据、划分和 YOLO baseline 主链路已完成，Phase 6 的统一 COCO/FROC 评估也已在 baseline 上完成一次真实运行；Phase 5 多范式横评、Phase 7 错误分析和 Phase 8 部署尚未开始。本周 Kaggle GPU 配额已耗尽，当前只做本地审查和实验准备。详细任务拆解见 [docs/TASK_BREAKDOWN.md](docs/TASK_BREAKDOWN.md)，执行日志见 [docs/PLAN_PROGRESS.md](docs/PLAN_PROGRESS.md)，Phase 4 历史结果见 [docs/RESULTS_PHASE4_YOLO.md](docs/RESULTS_PHASE4_YOLO.md)。
+项目状态：在建。Phase 1-4 的数据、划分和 YOLO baseline 主链路已完成，Phase 6 的统一 COCO/FROC 评估也已在 baseline 上完成一次真实运行；Phase 5 多范式横评、Phase 7 错误分析和 Phase 8 部署尚未开始。本周 Kaggle GPU 配额已耗尽，当前只做本地审查和实验准备。详细任务拆解见 [docs/TASK_BREAKDOWN.md](docs/TASK_BREAKDOWN.md)，执行日志见 [docs/PLAN_PROGRESS.md](docs/PLAN_PROGRESS.md)，真实目录说明见 [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)，Phase 4 历史结果见 [docs/RESULTS_PHASE4_YOLO.md](docs/RESULTS_PHASE4_YOLO.md)。
 
 在真实临床胸部 X 光数据集 **VinDr-CXR** 上，系统化对比五种主流目标检测范式，完成从数据处理、多标注融合、多模型训练调优、统一评估、错误分析到 ONNX 导出与 Demo 部署的完整闭环。
 
@@ -36,15 +36,18 @@
 
 ```text
 cxr-detectbench/
-├── data/                # 原始/处理数据不入库，仅保留 split 索引等小文件
+├── configs/             # Phase 5 模型配置草案：YOLO / MMDetection
+├── data/splits/         # 固定 split 索引和小型诊断图表
+├── demo/                # Phase 8 Demo 草案
+├── docs/                # 协议、任务、日志、阶段结果
 ├── notebooks/           # Kaggle Notebook 与 kernel metadata
-├── configs/             # YOLO / MMDetection 模型配置
-├── scripts/             # 数据处理、融合、格式转换、评估、错误分析脚本
-├── outputs/             # checkpoints / eval results / bad cases，不入库
-├── demo/                # Demo 应用
-├── docs/                # 任务拆解与执行记录
+├── outputs/             # checkpoints / eval results / bad cases，仅 .gitkeep 入库
+├── scripts/             # 按阶段分组的可执行脚本，见 scripts/README.md
+├── tests/               # 当前覆盖统一评估和预测导出
 └── CXR-DetectBench-Project-Plan.md
 ```
+
+脚本入口已按阶段整理：Phase 2 在 `scripts/phase2_preprocessing/`，Phase 3 在 `scripts/phase3_splits/`，Phase 4 在 `scripts/phase4_yolo/`，Phase 6 在 `scripts/phase6_evaluation/`，共享类名映射在 `scripts/shared/class_names.py`。不要再使用旧的根目录脚本路径。
 
 ## 环境与运行
 
@@ -187,7 +190,7 @@ Phase 2.4 融合消融结果（YOLOv8n，20 epochs）：
 - 图像级异常检测 AUC / sensitivity / specificity
 - 参数量、FLOPs、FPS、精度-速度 Pareto
 
-所有模型统一导出 COCO detection JSON：`image_id`、`category_id`、原图像素坐标 `[x, y, width, height]` 和 `score`。统一入口为 `scripts/evaluate_detection.py`，Ultralytics 适配器为 `scripts/export_ultralytics_predictions.py`，详细定义见 [docs/EVALUATION_PROTOCOL.md](docs/EVALUATION_PROTOCOL.md)。
+所有模型统一导出 COCO detection JSON：`image_id`、`category_id`、原图像素坐标 `[x, y, width, height]` 和 `score`。统一入口为 `scripts/phase6_evaluation/evaluate_detection.py`，Ultralytics 适配器为 `scripts/phase6_evaluation/export_ultralytics_predictions.py`，详细定义见 [docs/EVALUATION_PROTOCOL.md](docs/EVALUATION_PROTOCOL.md)。
 
 阶段分析：评估器已从训练框架中解耦，避免 YOLO、RT-DETR 和 MMDetection 各自使用不同默认阈值或指标实现。AP@0.4 在本项目中是领域定位容忍度的补充指标，不用于复现比赛排名；FROC 明确计入正常片误报，并采用类别感知的病灶级 micro 定义。当前 baseline 只完成一套预测，足以冻结协议和暴露性能瓶颈，但还不足以支撑跨模型结论。
 

@@ -48,48 +48,36 @@ pip install gradio
 
 ---
 
-## 2. 目录结构规划
+## 2. 当前目录结构
 
 ```
 cxr-detectbench/
-├── data/
-│   ├── raw/                      # 原始 DICOM + train.csv
-│   ├── processed/
-│   │   ├── images_png/           # 窗宽窗位+CLAHE处理后的PNG图
-│   │   ├── labels_coco/          # COCO格式标注（多个版本：raw/wbf/nms融合）
-│   │   └── labels_yolo/          # YOLO格式标注
-│   └── splits/                   # train/val/test 划分文件（按patient分层）
-├── notebooks/
-│   ├── 01_data_preprocessing.ipynb
-│   ├── 02_eda.ipynb
-│   ├── 03_label_fusion_ablation.ipynb
-│   ├── 04_train_yolo.ipynb
-│   ├── 05_train_rtdetr.ipynb
-│   ├── 06_train_faster_rcnn.ipynb
-│   ├── 07_train_retinanet.ipynb
-│   ├── 08_train_dino.ipynb
-│   ├── 09_unified_evaluation.ipynb
-│   ├── 10_error_analysis.ipynb
-│   └── 11_onnx_export_demo.ipynb
-├── configs/
+├── configs/                      # Phase 5 模型配置草案
 │   ├── yolo_cxr.yaml
 │   ├── mmdet_faster_rcnn_cxr.py
 │   ├── mmdet_retinanet_cxr.py
 │   └── mmdet_dino_cxr.py
+├── data/splits/                  # 已入库的 Phase 3 split 索引和小型诊断图表
+├── notebooks/
+│   ├── phase2_preprocessing.ipynb
+│   ├── phase4_yolo_smoke/
+│   ├── phase4_yolo_baseline/
+│   └── phase4_yolo_unified_eval/
 ├── scripts/
-│   ├── dicom_to_png.py
-│   ├── label_fusion.py           # WBF融合逻辑
-│   ├── convert_coco_yolo.py
-│   ├── eval_froc.py              # FROC曲线计算
-│   └── error_analysis.py
-├── outputs/
-│   ├── checkpoints/               # 定期存为 Kaggle Dataset 输出
-│   ├── eval_results/
-│   └── bad_cases/                 # 可视化的错误样本
-├── demo/
-│   └── app.py                    # Gradio demo
+│   ├── shared/                   # 跨阶段常量，例如 14 类映射
+│   ├── phase2_preprocessing/     # CLAHE、标注融合、格式转换、融合消融
+│   ├── phase3_splits/            # EDA 与固定 split 生成
+│   ├── phase4_yolo/              # YOLO 数据准备与 baseline 训练
+│   ├── phase6_evaluation/        # 统一 COCO/FROC 评估与预测导出
+│   └── phase7_analysis/          # 错误分析脚本草案
+├── docs/                         # 任务、日志、协议、阶段结果、真实结构说明
+├── outputs/                      # 只保留 .gitkeep；大输出不入 Git
+├── tests/                        # 当前覆盖统一评估与 Ultralytics 预测导出
+├── demo/                         # Phase 8 Demo 草案
 └── README.md
 ```
+
+早期计划中的 `01_*` 到 `11_*` notebook 文件名不是当前仓库入口；真实 notebook 清单见 `notebooks/README.md`，真实脚本结构见 `scripts/README.md` 和 `docs/PROJECT_STRUCTURE.md`。后续新增 Phase 5-8 notebook 时，按阶段目录命名并同步更新这三处索引。
 
 ---
 
@@ -154,12 +142,12 @@ cxr-detectbench/
 ### Phase 2：数据预处理
 
 - [ ] **DICOM → PNG**：按窗宽窗位（VOI LUT / WindowCenter+WindowWidth）转换到可视范围，再做 CLAHE 增强，保存为 `data/processed/images_png/`；保留一份处理前后对比图（用于 README 展示）
-- [x] **多标注融合消融实验**（`scripts/label_fusion.py`）：分别产出三个版本的标注
+- [x] **多标注融合消融实验**（`scripts/phase2_preprocessing/label_fusion.py`）：分别产出三个版本的标注
   - `labels_coco/raw/`：3位医生的框全部保留
   - `labels_coco/wbf/`：用 `ensemble-boxes` 库的 `weighted_boxes_fusion` 按 IoU 阈值融合成共识框（IoU阈值建议先尝试 0.5，可再做一次阈值消融）
   - `labels_coco/nms/`：简单 NMS 去重
   - 用一个轻量模型（YOLOv8n，少量 epoch）分别在三版标注上快速训练，对比验证集 mAP，确定最终采用哪种融合策略，**把这组对比结果记录下来，这是本项目最核心的实验之一**
-- [x] **格式转换**：从最终选定的融合标注版本，生成完整的 COCO json（给 MMDetection 用）和 YOLO txt（给 Ultralytics 用），`scripts/convert_coco_yolo.py`
+- [x] **格式转换**：从最终选定的融合标注版本，生成完整的 COCO json（给 MMDetection 用）和 YOLO txt（给 Ultralytics 用），`scripts/phase2_preprocessing/convert_coco_yolo.py`
 - [ ] 灰度图转3通道处理（复制通道或伪彩色映射二选一，记录选择理由）
 
 **验收标准**：`data/processed/` 下有完整的 PNG 图像 + 两种格式标注；有一份"融合策略消融实验"的结果记录（表格：融合方式 vs mAP）。
@@ -223,7 +211,7 @@ cxr-detectbench/
 
 - [x] 标准 COCO 指标：mAP@0.5、mAP@0.5:0.95、per-class AP；已在 YOLO baseline 上实测
 - [x] **领域标准 mAP@IoU>0.4**（PASCAL VOC风格，对齐 VinDr-CXR 相关文献的评估惯例）；YOLO baseline AP40=0.3806
-- [x] **FROC 曲线**（`scripts/eval_froc.py`）：类别感知病灶级 micro 定义已实现并在 YOLO baseline 上实测
+- [x] **FROC 曲线**（`scripts/phase6_evaluation/eval_froc.py`）：类别感知病灶级 micro 定义已实现并在 YOLO baseline 上实测
 - [ ] 图像级二分类指标：把检测结果聚合成"该图是否有异常"的判断，计算 AUC/敏感度/特异度，对应医生"看一眼判断有无问题"的临床工作流
 - [ ] 参数量/FLOPs/推理FPS对比，画一张"精度-速度" Pareto图
 - [ ] 汇总成一张总表：模型 × (mAP@0.5, mAP@0.5:0.95, mAP@0.4, FROC敏感度@某FP率, FPS, 参数量)

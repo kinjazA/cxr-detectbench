@@ -28,17 +28,17 @@ list containing records with exactly these shared semantics:
 ```
 
 - `bbox` is `[x, y, width, height]` in original-image pixel coordinates.
-- `category_id` uses the frozen 0-13 mapping in `scripts/class_names.py`.
+- `category_id` uses the frozen 0-13 mapping in `scripts/shared/class_names.py`.
 - `score` is a finite number in `[0, 1]`.
 - Prediction export should use a low confidence floor so the evaluator, rather
   than a framework-specific display threshold, determines the PR/FROC curve.
 
-The Ultralytics adapter is `scripts/export_ultralytics_predictions.py`. Future
+The Ultralytics adapter is `scripts/phase6_evaluation/export_ultralytics_predictions.py`. Future
 MMDetection adapters must produce the same JSON contract.
 
 ## Metrics
 
-`scripts/evaluate_detection.py` computes:
+`scripts/phase6_evaluation/evaluate_detection.py` computes:
 
 - COCO-style mAP at IoU 0.50:0.05:0.95 using 101 recall points.
 - AP@0.50 and AP@0.75 from the same evaluator.

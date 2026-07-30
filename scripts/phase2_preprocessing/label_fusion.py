@@ -16,11 +16,16 @@ import argparse
 import json
 from collections import defaultdict
 from pathlib import Path
+import sys
 
 import numpy as np
 import pandas as pd
 from ensemble_boxes import weighted_boxes_fusion
 from tqdm import tqdm
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 
 def boxes_to_normalized(boxes, img_width, img_height):
@@ -261,7 +266,7 @@ def build_coco_json(
     }
 
     # categories（0-13，不含 No finding=14）
-    from class_names import CLASS_NAMES
+    from scripts.shared.class_names import CLASS_NAMES
     for cid in range(14):
         coco["categories"].append({
             "id": cid,

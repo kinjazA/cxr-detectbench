@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from scripts.eval_froc import bbox_iou_xywh, compute_froc
+from scripts.phase6_evaluation.eval_froc import bbox_iou_xywh, compute_froc
 
 
 class FrocTests(unittest.TestCase):

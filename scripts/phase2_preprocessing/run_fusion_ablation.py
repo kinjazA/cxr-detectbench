@@ -23,12 +23,15 @@ import argparse
 import json
 import os
 import shutil
+import sys
 from pathlib import Path
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-from ultralytics import YOLO
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 
 def require_png_source(images_src):
@@ -55,6 +58,8 @@ def require_png_source(images_src):
 
 def create_temp_split(train_csv_path, output_dir, test_size=0.2, seed=42):
     """80/20 random split for ablation."""
+    from sklearn.model_selection import train_test_split
+
     df = pd.read_csv(train_csv_path)
     image_ids = df['image_id'].unique()
     train_ids, val_ids = train_test_split(image_ids, test_size=test_size, random_state=seed)
@@ -136,9 +141,7 @@ def prepare_variant(fusion_mode, coco_json, ablation_dir, train_ids, val_ids):
        (YOLO's img2label_paths produces ablation/labels/... paths,
         and OS-level symlink following makes them resolve transparently)
     """
-    import sys
-    sys.path.insert(0, 'scripts')
-    from convert_coco_yolo import coco_to_yolo_format
+    from scripts.phase2_preprocessing.convert_coco_yolo import coco_to_yolo_format
 
     coco_json = Path(coco_json)
     mode_dir = ablation_dir / fusion_mode
@@ -212,9 +215,7 @@ def prepare_variant(fusion_mode, coco_json, ablation_dir, train_ids, val_ids):
 
 def create_data_yaml(ablation_dir):
     """Create shared data.yaml at ablation/data.yaml."""
-    import sys
-    sys.path.insert(0, 'scripts')
-    from class_names import CLASS_NAMES
+    from scripts.shared.class_names import CLASS_NAMES
     names = [CLASS_NAMES[i] for i in range(14)]
 
     yaml_path = ablation_dir / 'data.yaml'
@@ -309,6 +310,8 @@ def main():
         verify_setup(ablation_dir)
 
         try:
+            from ultralytics import YOLO
+
             model = YOLO('yolov8n.pt')
             model.train(data=yaml_path, epochs=args.epochs, imgsz=args.imgsz,
                         batch=args.batch, name=f'fusion_{mode}',

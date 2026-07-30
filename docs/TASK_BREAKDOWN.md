@@ -5,7 +5,7 @@
 执行总原则：
 - 训练在 **Kaggle** 跑；本仓库存脚本 / config / notebook 源码。
 - CPU 数据处理与 GPU 训练拆成不同 Notebook。
-- 长训练脚本应支持从 checkpoint 续训；当前 `scripts/train_yolo_baseline.py` 尚未暴露 `--resume`，下次训练前必须补齐或明确从头训练的风险。
+- 长训练脚本应支持从 checkpoint 续训；当前 `scripts/phase4_yolo/train_yolo_baseline.py` 尚未暴露 `--resume`，下次训练前必须补齐或明确从头训练的风险。
 - 每次本地改动后提交推送；Kaggle 上产出的中间产物 Save Version 成 Kaggle Dataset 供下个 session 挂载。
 
 ---
@@ -28,7 +28,7 @@
 - [x] 1.1 挂载数据集，读取 `train.csv`，核对字段名与计划第 3 节表格 ✅ 字段完全一致
 - [x] 1.2 统计实际 image 数量、正常/异常比例、各类别标注框数 ✅ 15000/10606/4394 与先验一致；标注者实为 17 位医生池、每图 3 人
 - [x] 1.3 DICOM 头信息缺失率统计 ✅ 用 `sunhwan/.../dicom-metadata`，WindowCenter/Width 97.18%可用，RescaleSlope/Intercept 81.88%可用
-- [x] 1.4 核对 14 类映射表与实际 `train.csv` ✅ 一致，`scripts/class_names.py` 已冻结
+- [x] 1.4 核对 14 类映射表与实际 `train.csv` ✅ 一致，`scripts/shared/class_names.py` 已冻结
 
 **验收**：✅ Phase 1 完成。数据核查小结已记入 PLAN_PROGRESS.md。
 
@@ -41,15 +41,15 @@
 - 本项目重点：CLAHE 增强 + 多标注融合管道（WBF/NMS 消融是核心卖点）
 - README 诚实说明数据来源
 
-- [x] 2.1 写 `scripts/apply_clahe.py`：读 PNG → CLAHE 增强 → 灰度转 3 通道 → 存 `images_png/`；保留处理前后对比图（供 README）
+- [x] 2.1 写 `scripts/phase2_preprocessing/apply_clahe.py`：读 PNG → CLAHE 增强 → 灰度转 3 通道 → 存 `images_png/`；保留处理前后对比图（供 README）
 - [x] 2.2 灰度转 3 通道方案选定：复制通道 / 伪彩色二选一，在脚本注释记理由
-- [x] 2.3 写 `scripts/label_fusion.py`，产出三版 COCO 标注：
+- [x] 2.3 写 `scripts/phase2_preprocessing/label_fusion.py`，产出三版 COCO 标注：
       - `labels_coco/raw/`：3 医生框全保留
       - `labels_coco/wbf/`：`ensemble-boxes` 的 `weighted_boxes_fusion`，IoU 阈值先 0.5
       - `labels_coco/nms/`：简单 NMS 去重
 - [x] 2.4 **融合策略消融实验**：YOLOv8n 少量 epoch（如 20ep），分别在三版标注上训练，对比 val mAP，产出"融合方式 vs mAP"表 → 锁定最终融合策略（IoU 阈值可再做一次消融）
       - 2026-07-24 Kaggle 完成：raw 0.2812 / wbf 0.3210 / nms 0.3043（mAP@0.5），最终策略：`wbf`
-- [x] 2.5 写 `scripts/convert_coco_yolo.py`：从选定融合标注生成完整 COCO json（MMDet 用）+ YOLO txt（Ultralytics 用）
+- [x] 2.5 写 `scripts/phase2_preprocessing/convert_coco_yolo.py`：从选定融合标注生成完整 COCO json（MMDet 用）+ YOLO txt（Ultralytics 用）
 
 **验收**：Phase 2 融合消融已完成并记录在 `docs/PLAN_PROGRESS.md`；本轮成功链路直接使用 original PNG，CLAHE 是否纳入正式训练留到 Phase 3/4 决策。
 
@@ -71,7 +71,7 @@
 
 ## Phase 4：Baseline 打通全流程
 
-- [x] 4.0 写正式 YOLO 数据集准备脚本：读取 Phase 3 split + WBF COCO，生成 `images/{train,val,test}` symlink、`labels/{train,val,test}` txt 和 `data.yaml` ✅ `scripts/prepare_yolo_dataset.py`
+- [x] 4.0 写正式 YOLO 数据集准备脚本：读取 Phase 3 split + WBF COCO，生成 `images/{train,val,test}` symlink、`labels/{train,val,test}` txt 和 `data.yaml` ✅ `scripts/phase4_yolo/prepare_yolo_dataset.py`
 - [x] 4.1 YOLOv8n 跑通"训练 → 验证 → 推理 → mAP"完整链路（不追求分数，只验流程）✅ 2026-07-24 Kaggle 3 epoch smoke test：mAP@0.5=0.1998 / mAP@0.5:0.95=0.1002
 - [x] 4.1b YOLOv8n 正式 baseline：P100 配置 `imgsz=640, epochs=50, batch=16, workers=4, cache=False`，6.874 小时完成；best val mAP@0.5=0.3692 / mAP@0.5:0.95=0.1931
 - [x] 4.2 确认 COCO 标注可被 pycocotools 2.0.10 正确加载评估；已用实际 WBF JSON + 2,250 张 val split 验证
@@ -113,7 +113,7 @@
 - [x] 6.0 冻结跨框架预测契约与评估协议：`docs/EVALUATION_PROTOCOL.md`
 - [x] 6.1 实现并运行标准 COCO 指标：真实 baseline 的 mAP50-95=0.1812、AP50=0.3499，且已生成逐类 AP
 - [x] 6.2 实现并运行同一 COCO 101 点插值协议下的 AP@0.4：真实 baseline AP40=0.3806；其为领域补充指标而非比赛指标
-- [x] 6.3 **FROC 曲线** `scripts/eval_froc.py`：类别感知病灶级计算、固定 FP/image operating points 和真实 baseline 结果已完成；多模型叠加图待后续模型产生
+- [x] 6.3 **FROC 曲线** `scripts/phase6_evaluation/eval_froc.py`：类别感知病灶级计算、固定 FP/image operating points 和真实 baseline 结果已完成；多模型叠加图待后续模型产生
 - [ ] 6.4 图像级二分类指标：检测结果聚合为"该图是否有异常"，算 AUC / 敏感度 / 特异度
 - [ ] 6.5 参数量 / FLOPs / 推理 FPS 对比，画精度-速度 Pareto 图
 - [ ] 6.6 汇总总表：模型 × (mAP@0.5, mAP@0.5:0.95, mAP@0.4, FROC敏感度@某FP率, FPS, 参数量)
