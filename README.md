@@ -1,7 +1,7 @@
 # CXR-DetectBench
 ## 胸部 X 光多范式目标检测基准系统
 
-项目状态：在建。Phase 1-4 的数据、划分和 YOLO baseline 主链路已完成，Phase 6 的统一 COCO/FROC 评估也已在 baseline 上完成一次真实运行；Phase 5 多范式横评、Phase 7 错误分析和 Phase 8 部署尚未开始。本周 Kaggle GPU 配额已耗尽，当前只做本地审查和实验准备。详细任务拆解见 [docs/TASK_BREAKDOWN.md](docs/TASK_BREAKDOWN.md)，执行日志见 [docs/PLAN_PROGRESS.md](docs/PLAN_PROGRESS.md)，真实目录说明见 [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)，Phase 4 历史结果见 [docs/RESULTS_PHASE4_YOLO.md](docs/RESULTS_PHASE4_YOLO.md)。
+项目状态：在建。Phase 1-4 的数据、划分和 YOLO baseline 主链路已完成，Phase 6 的统一 COCO/FROC 评估也已在 baseline 上完成一次真实运行；Phase 5 多范式横评、Phase 7 错误分析和 Phase 8 部署尚未开始。本周 Kaggle GPU 配额已耗尽，当前只做本地审查和实验准备。训练入口已支持从 `.pt` checkpoint 续训，但尚未在本地执行 Ultralytics 续训；真实 Kaggle 验证留到配额恢复后。详细任务拆解见 [docs/TASK_BREAKDOWN.md](docs/TASK_BREAKDOWN.md)，执行日志见 [docs/PLAN_PROGRESS.md](docs/PLAN_PROGRESS.md)，真实目录说明见 [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)，Phase 4 历史结果见 [docs/RESULTS_PHASE4_YOLO.md](docs/RESULTS_PHASE4_YOLO.md)。
 
 在真实临床胸部 X 光数据集 **VinDr-CXR** 上，系统化对比五种主流目标检测范式，完成从数据处理、多标注融合、多模型训练调优、统一评估、错误分析到 ONNX 导出与 Demo 部署的完整闭环。
 
@@ -144,7 +144,7 @@ Phase 2.4 融合消融结果（YOLOv8n，20 epochs）：
 
 ### Phase 4：Baseline 跑通全链路
 
-状态：smoke test、正式 baseline、统一预测导出和统一评估均已完成；GT/预测可视化仍未完成。
+状态：smoke test、正式 baseline、统一预测导出和统一评估均已完成；GT/预测可视化入口已实现，真实图像渲染待在有数据环境中验证。
 
 目标是用 `wbf` 标注和 Phase 3 固定 split，跑通一次 YOLO baseline 的训练、验证、推理、mAP 计算和可视化。这里不追求最终分数，重点是验证正式训练代码、数据格式、checkpoint、评估脚本和结果保存规范。
 
@@ -230,7 +230,7 @@ README 会随每个阶段更新，不再只保留“最新进展”。最终交�
 
 本周 Kaggle GPU 配额已耗尽，当前不启动新训练。恢复配额后按以下顺序推进：
 
-1. 本地先补齐 YOLO checkpoint resume、冻结实际依赖版本，并准备 GT/预测框可视化。
+1. 已在本地补齐 YOLO checkpoint resume、冻结已核实的 YOLO/P100 依赖，并实现 GT/预测框可视化入口；下一步在真实数据环境验证渲染结果。
 2. 做一项资源受限的分辨率实验，候选为 `imgsz=896`；只有显存不允许时才调整 batch，并明确记录这一资源耦合。
 3. 重点比较 `mAP75`、`mAP50-95`、小目标/弱类别 AP 和 FROC@0.25/0.5/1；若没有改善，不继续盲目堆 YOLO 超参。
 4. 在冻结预测契约和评估器后进入 RT-DETR、Faster R-CNN，再根据剩余算力决定 RetinaNet/DINO。

@@ -13,7 +13,7 @@ cxr-detectbench/
 ├── notebooks/      # 已创建并推送 Kaggle 的 notebook 源码与 metadata
 ├── outputs/        # 只保留 .gitkeep；大输出不入 Git
 ├── scripts/        # 按 Phase 分组的可执行脚本
-├── tests/          # 当前覆盖统一评估和 Ultralytics 预测导出
+├── tests/          # 当前覆盖统一评估、预测导出、训练入口和可视化
 └── CXR-DetectBench-Project-Plan.md
 ```
 
@@ -40,6 +40,7 @@ scripts/
 │   ├── evaluate_detection.py
 │   └── export_ultralytics_predictions.py
 └── phase7_analysis/
+    ├── visualize_detections.py
     └── error_analysis.py
 ```
 

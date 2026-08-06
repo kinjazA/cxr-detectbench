@@ -316,6 +316,15 @@ train.csv 已下载到 `data/raw/train.csv`（67,914 行 / 15,000 unique image_i
 **当前算力状态与后续安排：**
 
 - 用户已确认本周 Kaggle GPU 配额耗尽；本周不启动新的训练或评估运行。
-- 下次 GPU 配额恢复前：补齐 `train_yolo_baseline.py` 的 checkpoint resume，冻结实际依赖版本，并准备 GT/预测可视化与阶段 artifact 归档。
+- 下次 GPU 配额恢复前：验证本地新增的 checkpoint resume、依赖清单和 GT/预测可视化入口；实际 Kaggle Dataset 持久化仍待运行时登记。
 - 第一项候选实验是提高输入分辨率（候选 `imgsz=896`），保留模型、WBF、split、epoch、seed 与评估协议。若 P100 显存迫使 batch 从 16 调为 8，必须将其明确为资源耦合的分辨率实验，而非严格单变量实验。
 - 只有该实验明确改善 `mAP75`、小目标类别 AP 和 FROC@0.25/0.5/1，才继续沿 YOLO 优化；否则进入 RT-DETR/Faster R-CNN，以满足多范式横评目标。
+
+## 2026-08-06：下一阶段本地工程准备
+
+- 已为 `scripts/phase4_yolo/train_yolo_baseline.py` 增加 `--resume`。脚本会在训练开始前校验 checkpoint 存在且扩展名为 `.pt`；续训时加载该 checkpoint，并将 `--epochs` 解释为恢复后的目标总 epoch 数。
+- 训练摘要现在记录 `training_mode`、实际 `model` 来源和 `resume_checkpoint`，避免把从 checkpoint 恢复的实验误记成全新训练。
+- 已新增 `scripts/requirements-kaggle-yolo-p100.txt`，包含已在 Phase 4 Kaggle P100 链路核实的 PyTorch、torchvision、Ultralytics 和 pycocotools 版本。MMDetection 版本没有凭经验冻结，等待实际 Kaggle 环境验证。
+- 本地验证范围：纯 Python checkpoint 路径校验和脚本语法；没有启动 Kaggle 训练，也没有声称 Ultralytics resume API 已在当前本地环境执行，因为本地虚拟环境未安装 Ultralytics。
+- 新增 `scripts/phase7_analysis/visualize_detections.py`：按共享 COCO 契约读取 GT 和预测，默认只渲染确定性的少量图像，输出绿色 GT 框、红色预测框及 `manifest.json`；不会默认生成大规模 Kaggle 输出。
+- 可视化脚本的本地测试覆盖 JSON 读取、image ID 归一化、确定性采样、未知 ID 拒绝和 OpenCV 叠加输出；当前用临时 PNG 完成了渲染验证，挂载真实项目 PNG 后仍需抽查框坐标和文字可读性。

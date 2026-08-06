@@ -5,7 +5,7 @@
 执行总原则：
 - 训练在 **Kaggle** 跑；本仓库存脚本 / config / notebook 源码。
 - CPU 数据处理与 GPU 训练拆成不同 Notebook。
-- 长训练脚本应支持从 checkpoint 续训；当前 `scripts/phase4_yolo/train_yolo_baseline.py` 尚未暴露 `--resume`，下次训练前必须补齐或明确从头训练的风险。
+- 长训练脚本支持从 checkpoint 续训；`scripts/phase4_yolo/train_yolo_baseline.py --resume` 的 `--epochs` 表示恢复后的目标总 epoch 数。
 - 每次本地改动后提交推送；Kaggle 上产出的中间产物 Save Version 成 Kaggle Dataset 供下个 session 挂载。
 
 ---
@@ -16,8 +16,8 @@
 - [x] 0.2 在 Kaggle 新建 private Notebook，Add Input 挂载 `vinbigdata-chest-xray-abnormalities-detection` 竞赛数据集及确认过的 PNG / metadata 输入
 - [ ] 0.3 在 Kaggle Notebook 安装依赖：`pip install ultralytics pydicom opencv-python-headless albumentations ensemble-boxes pycocotools onnx onnxruntime gradio` + `mim install mmengine mmcv mmdet`
 - [x] 0.4 已验证 YOLO 运行环境并记录实际版本：Python 3.12.13 / torch 2.4.0+cu121 / torchvision 0.19.0+cu121 / Ultralytics 8.4.104 / pycocotools 2.0.10；MMDetection 环境仍待实际验证
-- [ ] 0.5 在本仓库的 `scripts/requirements.txt` 冻结一版依赖（标明实际版本）
-- [ ] 0.6 设计 checkpoint 持久化流程：每阶段训练结束 `Save Version` 成 Kaggle Dataset `cxr-detectbench-ckpt-<phase>`，下个 session Add Data 挂载续训；在 README/PLAN_PROGRESS 里登记每个 Dataset 的引用路径
+- [x] 0.5 冻结已验证的 YOLO/P100 依赖：`scripts/requirements-kaggle-yolo-p100.txt`；MMDetection 依赖待 Kaggle 实测后冻结
+- [ ] 0.6 本地训练入口已支持从 Kaggle Dataset 挂载的 `.pt` checkpoint 续训；实际 Save Version / Add Data 持久化和引用路径登记待下一次 Kaggle 运行验证
 
 **验收**：新开一个 Kaggle session，Add Data 能直接拿到 Phase 2 处理好的数据，无需重跑预处理。
 
@@ -76,9 +76,9 @@
 - [x] 4.1b YOLOv8n 正式 baseline：P100 配置 `imgsz=640, epochs=50, batch=16, workers=4, cache=False`，6.874 小时完成；best val mAP@0.5=0.3692 / mAP@0.5:0.95=0.1931
 - [x] 4.2 确认 COCO 标注可被 pycocotools 2.0.10 正确加载评估；已用实际 WBF JSON + 2,250 张 val split 验证
 - [x] 4.2b 从真实 `best.pt` 导出全部 val 预测并完成统一 COCO/FROC 评估：mAP50-95=0.1812、AP40=0.3806、AP50=0.3499、AP75=0.1694；完整结果见 `RESULTS_PHASE4_YOLO.md`
-- [ ] 4.3 确认可视化脚本可用：预测框 + GT 框对比图
+- [ ] 4.3 实现并验证可视化脚本：`scripts/phase7_analysis/visualize_detections.py` 输出预测框 + GT 框对比图和 `manifest.json`（代码已完成，真实图像渲染待验证）
 
-**验收**：训练、框架原生 val 和统一预测导出/评估已完成；GT 对比可视化完成后关闭 Phase 4。
+**验收**：训练、框架原生 val 和统一预测导出/评估已完成；真实 GT 对比图渲染验证后关闭 Phase 4。
 
 ---
 

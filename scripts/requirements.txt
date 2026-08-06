@@ -2,7 +2,7 @@
 # 实际版本以 Kaggle 上 `pip list` 为准，回填到 docs/PLAN_PROGRESS.md
 
 # --- detection frameworks ---
-ultralytics            # YOLO series + RT-DETR
+ultralytics==8.4.104   # verified in the Phase 4 Kaggle baseline
 # openmim + mmengine/mmcv/mmdet 建议 mim install（见下注释）：
 #   pip install -U openmim
 #   mim install mmengine mmcv mmdet   # Faster R-CNN / RetinaNet / DINO

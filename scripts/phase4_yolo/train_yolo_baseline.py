@@ -72,10 +72,32 @@ def write_csv(path: Path, rows):
         writer.writerows(rows)
 
 
-def write_metrics(summary_dir: Path, metrics, args, save_dir: Path):
+def resolve_resume_checkpoint(value: str | None) -> Path | None:
+    """Validate and normalize a checkpoint path supplied for continuation."""
+    if value is None:
+        return None
+    checkpoint = Path(value).expanduser().resolve()
+    if not checkpoint.is_file():
+        raise FileNotFoundError(f"Resume checkpoint does not exist: {checkpoint}")
+    if checkpoint.suffix.lower() != ".pt":
+        raise ValueError(f"Resume checkpoint must be a .pt file: {checkpoint}")
+    return checkpoint
+
+
+def write_metrics(
+    summary_dir: Path,
+    metrics,
+    args,
+    save_dir: Path,
+    *,
+    model_source: str,
+    resume_checkpoint: Path | None,
+):
     box = metrics.box
     overall = {
-        "model": args.model,
+        "model": model_source,
+        "training_mode": "resume" if resume_checkpoint else "fresh",
+        "resume_checkpoint": str(resume_checkpoint) if resume_checkpoint else None,
         "data": str(Path(args.data).resolve()),
         "epochs": args.epochs,
         "imgsz": args.imgsz,
@@ -126,9 +148,11 @@ def train(args):
 
     project = Path(args.project).resolve()
     summary_dir = Path(args.summary_dir).resolve()
+    resume_checkpoint = resolve_resume_checkpoint(args.resume)
+    model_source = str(resume_checkpoint) if resume_checkpoint else args.model
 
-    model = YOLO(args.model)
-    train_result = model.train(
+    model = YOLO(model_source)
+    train_kwargs = dict(
         data=args.data,
         epochs=args.epochs,
         imgsz=args.imgsz,
@@ -145,6 +169,11 @@ def train(args):
         save_period=-1,
         verbose=True,
     )
+    if resume_checkpoint:
+        # Ultralytics restores optimizer/scheduler state from the loaded model.
+        # `epochs` remains the target total epoch, not additional epochs.
+        train_kwargs["resume"] = True
+    train_result = model.train(**train_kwargs)
 
     trainer = getattr(model, "trainer", None)
     save_dir = Path(
@@ -166,7 +195,14 @@ def train(args):
         plots=False,
     )
 
-    write_metrics(summary_dir, metrics, args, save_dir)
+    write_metrics(
+        summary_dir,
+        metrics,
+        args,
+        save_dir,
+        model_source=model_source,
+        resume_checkpoint=resume_checkpoint,
+    )
     dataset_summary = Path(args.dataset_summary)
     if dataset_summary.exists():
         shutil.copy2(dataset_summary, summary_dir / "dataset_summary.csv")
@@ -190,6 +226,13 @@ def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", required=True, help="Ultralytics data.yaml path")
     parser.add_argument("--model", default="yolov8n.pt")
+    parser.add_argument(
+        "--resume",
+        help=(
+            "Path to a .pt checkpoint to continue. --epochs is the target total "
+            "epoch, not the number of additional epochs."
+        ),
+    )
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--batch", type=int, default=16)

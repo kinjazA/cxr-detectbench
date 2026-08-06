@@ -79,19 +79,19 @@ FROC 使用类别感知、病灶级 micro 匹配，正常图像也计入 FP/imag
 
 第三，类别差异与 Phase 3 的尺寸诊断一致。`Nodule/Mass`、`Calcification`、`Pleural thickening` 的 median normalized area 分别为 0.0014、0.0038、0.0044，正是需要优先验证高分辨率收益的类别。`Cardiomegaly` 和 `Aortic enlargement` 的 AP50-95 分别为 0.6058 和 0.5325，较大的、形态更稳定的目标明显更容易。
 
-第四，FROC 表明在每图 0.5 个假阳性时 sensitivity 为 0.3876，每图 1 个假阳性时为 0.4502；这比单看 AP 更能体现当前系统在低误报约束下的实际召回能力。现阶段没有图像级 AUC、bad case 可视化或 test split 结果，因此不能进一步声称临床工作流性能或泛化性能。
+第四，FROC 表明在每图 0.5 个假阳性时 sensitivity 为 0.3876，每图 1 个假阳性时为 0.4502；这比单看 AP 更能体现当前系统在低误报约束下的实际召回能力。现阶段没有图像级 AUC、真实 bad case 图集或 test split 结果，因此不能进一步声称临床工作流性能或泛化性能。
 
 ## 5. 当前限制与解释边界
 
 - 这是单个 YOLOv8n、单个 WBF 标注策略、单一 validation split 的 baseline，不是五范式横评结论。
 - 采用 image-level split；由于当前 metadata 没有可靠的 patient/study id，不能宣称 patient-level 防泄漏。
 - test split 尚未使用，必须继续保留给冻结模型或最终阶段评估。
-- 统一评估只覆盖 COCO AP、AP40/AP50/AP75 和 FROC；图像级 AUC、参数量/FLOPs、FPS 和错误可视化尚未完成。
-- 原始训练脚本目前没有 checkpoint resume 参数；在继续消耗 Kaggle GPU 前必须补齐或明确每次从头训练的风险。
-- `scripts/requirements.txt` 尚未完全按 Kaggle 实际版本冻结；当前已验证的关键版本是 Python 3.12.13、PyTorch 2.4.0+cu121、torchvision 0.19.0+cu121、Ultralytics 8.4.104 和 pycocotools 2.0.10。
+- 统一评估只覆盖 COCO AP、AP40/AP50/AP75 和 FROC；图像级 AUC、参数量/FLOPs、FPS 和真实错误图集尚未完成。GT/预测叠加脚本已实现，但未在当前本地环境对真实 PNG 执行。
+- 训练入口已补充 `--resume`；它要求显式传入存在的 `.pt` 文件，并把 `--epochs` 定义为恢复后的目标总 epoch 数。
+- 已新增 `scripts/requirements-kaggle-yolo-p100.txt`，冻结已验证的 YOLO/P100 baseline 版本。MMDetection 依赖仍未冻结，必须等实际 Kaggle 环境验证后再写死。
 
 ## 6. 下一阶段实验候选
 
 本周 Kaggle GPU 配额已耗尽，因此当前只做本地准备，不启动新实验。恢复配额后，优先执行一个资源受限的分辨率实验：保持模型、split、WBF、epoch、seed 和评估协议不变，尝试提高 `imgsz`（候选 896）；如果 P100 显存不允许，才把 batch 降到 8，并在结果中明确这不是严格的单变量比较。重点观察 `mAP75`、`mAP50-95`、`Nodule/Mass`、`Calcification`、`Pleural thickening`、`Lung Opacity` 和 FROC@0.25/0.5/1。
 
-在该实验前，先完成本地工程准备：补齐 YOLO checkpoint resume、冻结实际依赖版本、把预测和评估输出保存为可追溯的阶段 artifact，并准备预测框/GT 可视化。只有高分辨率实验明确改善定位或小目标后，才进入训练增强、后期关闭 mosaic 或其他变量；否则应转向 RT-DETR/Faster R-CNN 的跨范式比较，而不是继续堆 YOLO 超参。
+在该实验前，先完成本地工程准备：补齐 YOLO checkpoint resume、冻结实际依赖版本、把预测和评估输出保存为可追溯的阶段 artifact，并在真实图像环境验证预测框/GT 可视化。只有高分辨率实验明确改善定位或小目标后，才进入训练增强、后期关闭 mosaic 或其他变量；否则应转向 RT-DETR/Faster R-CNN 的跨范式比较，而不是继续堆 YOLO 超参。
